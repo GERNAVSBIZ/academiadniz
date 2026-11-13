@@ -969,15 +969,95 @@ const FINAL_EXAM_QUESTIONS = [
   }
 ];
 
-// ESTADO DA APLICAÇÃO
+// ============================================================================
+// PORTAL ACADEMIA DNIZ — MOTOR DE PERFIS, SESSÕES, HORAS E NUVEM (SUPABASE/FIREBASE)
+// ============================================================================
+const PORTAL_DB_KEY = 'ACADEMIA_DNIZ_PORTAL_DB_V2';
+const ACTIVE_SESSION_KEY = 'ACADEMIA_DNIZ_ACTIVE_SESSION_V2';
+
+// Catálogo inicial da Academia DNIZ (expansível pelo Gestor)
+const DEFAULT_COURSES = [
+  {
+    id: 'avsec-sbiz',
+    code: 'AVSEC-SBIZ-01',
+    title: 'Treinamento de Familiarização AVSEC — NAV Brasil (DNB / Rádio Imperatriz - SBIZ)',
+    category: 'Segurança da Aviação Civil (AVSEC / SeMS)',
+    workloadHours: 4,
+    normas: 'Decreto nº 11.195/2022 • DCA 205-7 • ICA 205-48 • ICA 63-14 • CIRCEA 100-56/2025',
+    description: 'Capacitação interativa em 4 Módulos Sequenciais com Trava 3/3 nos Quizzes, Simulador ESAB (Anexo G), Defesa NBQR/Cibersegurança, Ponto de Encontro (PE) e Avaliação Final de 10 questões com Certificado Digital.',
+    status: 'active',
+    hasInteractiveEngine: true
+  }
+];
+
+// Perfis iniciais pré-configurados (gerenciáveis pelo Gestor)
+const DEFAULT_USERS = [
+  {
+    id: 'usr-gestor',
+    username: 'gestor',
+    password: 'nav123',
+    name: 'Gestor DNB / Rádio Imperatriz (SBIZ)',
+    matricula: 'GESTOR-SBIZ',
+    cargo: 'Gerência DNB-IZ / Gestor AVSEC',
+    role: 'gestor',
+    assignedCourses: ['avsec-sbiz'],
+    active: true
+  },
+  {
+    id: 'usr-op1',
+    username: 'operador1',
+    password: '1234',
+    name: 'Operador EPTA — Turno Operacional',
+    matricula: 'NAV-1001',
+    cargo: 'Operador de Estação Aeronáutica (OEA)',
+    role: 'colaborador',
+    assignedCourses: ['avsec-sbiz'],
+    active: true
+  },
+  {
+    id: 'usr-tec1',
+    username: 'tecnico1',
+    password: '1234',
+    name: 'Técnico CNS — Manutenção SBIZ',
+    matricula: 'NAV-1002',
+    cargo: 'Técnico de Telecomunicações / CNS',
+    role: 'colaborador',
+    assignedCourses: ['avsec-sbiz'],
+    active: true
+  }
+];
+
+let portalDB = {
+  users: [],
+  courses: [],
+  progressByUser: {}, // { [userId]: { [courseId]: { ...courseProgress } } }
+  accessLogs: [],     // [{ sessionId, userId, userName, userMatricula, userCargo, courseId, courseTitle, loginAt, lastActiveAt, durationSeconds, statusSnapshot }]
+  cloudConfig: {
+    provider: 'firebase', // 'firebase' (Realtime DB REST) ou 'supabase' (REST API)
+    firebaseUrl: '',      // ex: https://academia-dniz-default-rtdb.firebaseio.com
+    supabaseUrl: '',      // ex: https://xxxx.supabase.co
+    supabaseKey: '',
+    lastSyncAt: null
+  }
+};
+
+// Estado de navegação e curso ativo na sessão atual
 let appState = {
+  currentUserId: null,
+  currentSessionId: null,
+  portalMode: 'login',       // 'login' | 'portal' | 'course-lobby' | 'course-focus'
+  activePortalTab: 'catalog',// 'catalog' | 'myhistory' | 'manager'
+  activeManagerSubtab: 'reports', // 'reports' | 'users' | 'courses' | 'cloud'
+  activeCourseId: 'avsec-sbiz',
+  inspectingUserIdForCert: null, // Permite ao Gestor abrir o certificado de qualquer colaborador
+  // Espelho do progresso do usuário logado no curso atual:
   employeeName: '',
   employeeId: '',
-  inFocusMode: false,            // false = Painel de Módulos (Lobby) | true = Tela Exclusiva de Estudo (Sem distrações)
-  currentView: 'module-1',       // 'module-1'..'module-4' | 'final-exam' | 'certificate'
-  activePillByModule: { 1: 0, 2: 0, 3: 0, 4: 0 }, // 0=Pílula 1, 1=Pílula 2, 2=Pílula 3, 3=Quiz (Trava 3/3)
+  inFocusMode: false,
+  currentView: 'module-1',
+  activePillByModule: { 1: 0, 2: 0, 3: 0, 4: 0 },
   visitedPills: { 1: [0], 2: [0], 3: [0], 4: [0] },
-  completedModules: [],          // ex: [1, 2]
+  completedModules: [],
   finalExamPassed: false,
   finalExamScore: null,
   finalExamAnswers: {},
@@ -985,35 +1065,485 @@ let appState = {
   validationCode: null
 };
 
+let sessionTimerInterval = null;
+
+function createDefaultUserCourseProgress() {
+  return {
+    status: 'not_started', // 'not_started' | 'in_progress' | 'completed'
+    startedAt: null,
+    lastAccessAt: null,
+    currentView: 'module-1',
+    activePillByModule: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    visitedPills: { 1: [0], 2: [0], 3: [0], 4: [0] },
+    completedModules: [],
+    finalExamPassed: false,
+    finalExamScore: null,
+    finalExamAnswers: {},
+    completionDate: null,
+    validationCode: null,
+    totalSecondsSpent: 0
+  };
+}
+
+function getUserCourseProgress(userId, courseId = 'avsec-sbiz') {
+  if (!portalDB.progressByUser[userId]) {
+    portalDB.progressByUser[userId] = {};
+  }
+  if (!portalDB.progressByUser[userId][courseId]) {
+    portalDB.progressByUser[userId][courseId] = createDefaultUserCourseProgress();
+  }
+  return portalDB.progressByUser[userId][courseId];
+}
+
+function getCurrentUser() {
+  return portalDB.users.find(u => u.id === appState.currentUserId) || null;
+}
+
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(PORTAL_DB_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      appState = {
-        ...appState,
+      portalDB = {
+        ...portalDB,
         ...parsed,
-        activePillByModule: { ...appState.activePillByModule, ...(parsed.activePillByModule || {}) },
-        visitedPills: { ...appState.visitedPills, ...(parsed.visitedPills || {}) }
+        users: Array.isArray(parsed.users) && parsed.users.length ? parsed.users : DEFAULT_USERS,
+        courses: Array.isArray(parsed.courses) && parsed.courses.length ? parsed.courses : DEFAULT_COURSES,
+        progressByUser: parsed.progressByUser || {},
+        accessLogs: Array.isArray(parsed.accessLogs) ? parsed.accessLogs : [],
+        cloudConfig: { ...portalDB.cloudConfig, ...(parsed.cloudConfig || {}) }
       };
+    } else {
+      portalDB.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+      portalDB.courses = JSON.parse(JSON.stringify(DEFAULT_COURSES));
+    }
+
+    // Restaura sessão ativa se o usuário recarregou a página
+    const activeRaw = sessionStorage.getItem(ACTIVE_SESSION_KEY);
+    if (activeRaw) {
+      const activeParsed = JSON.parse(activeRaw);
+      const existingUser = portalDB.users.find(u => u.id === activeParsed.currentUserId && u.active !== false);
+      if (existingUser) {
+        appState.currentUserId = existingUser.id;
+        appState.currentSessionId = activeParsed.currentSessionId;
+        appState.portalMode = activeParsed.portalMode || 'portal';
+        appState.activePortalTab = activeParsed.activePortalTab || 'catalog';
+        appState.activeManagerSubtab = activeParsed.activeManagerSubtab || 'reports';
+        appState.activeCourseId = activeParsed.activeCourseId || 'avsec-sbiz';
+        syncAppStateFromUserProgress(existingUser.id, appState.activeCourseId);
+        startLiveSessionTimer();
+      }
     }
   } catch (e) {
-    console.warn('Erro ao carregar estado:', e);
+    console.warn('Erro ao carregar banco da Academia DNIZ:', e);
+    portalDB.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+    portalDB.courses = JSON.parse(JSON.stringify(DEFAULT_COURSES));
   }
 }
 
-function saveState() {
+function syncAppStateFromUserProgress(userId, courseId = 'avsec-sbiz') {
+  const user = portalDB.users.find(u => u.id === userId);
+  const prog = getUserCourseProgress(userId, courseId);
+  appState.employeeName = user ? user.name : '';
+  appState.employeeId = user ? `${user.matricula} • ${user.cargo}` : '';
+  appState.currentView = prog.currentView || 'module-1';
+  appState.activePillByModule = { 1: 0, 2: 0, 3: 0, 4: 0, ...(prog.activePillByModule || {}) };
+  appState.visitedPills = { 1: [0], 2: [0], 3: [0], 4: [0], ...(prog.visitedPills || {}) };
+  appState.completedModules = Array.isArray(prog.completedModules) ? [...prog.completedModules] : [];
+  appState.finalExamPassed = !!prog.finalExamPassed;
+  appState.finalExamScore = prog.finalExamScore ?? null;
+  appState.finalExamAnswers = { ...(prog.finalExamAnswers || {}) };
+  appState.completionDate = prog.completionDate || null;
+  appState.validationCode = prog.validationCode || null;
+}
+
+function syncUserProgressFromAppState() {
+  if (!appState.currentUserId) return;
+  const prog = getUserCourseProgress(appState.currentUserId, appState.activeCourseId);
+  prog.currentView = appState.currentView;
+  prog.activePillByModule = { ...appState.activePillByModule };
+  prog.visitedPills = { ...appState.visitedPills };
+  prog.completedModules = [...appState.completedModules];
+  prog.finalExamPassed = appState.finalExamPassed;
+  prog.finalExamScore = appState.finalExamScore;
+  prog.finalExamAnswers = { ...appState.finalExamAnswers };
+  prog.completionDate = appState.completionDate;
+  prog.validationCode = appState.validationCode;
+  prog.lastAccessAt = new Date().toLocaleString('pt-BR');
+
+  if (prog.finalExamPassed) {
+    prog.status = 'completed';
+  } else if (
+    prog.completedModules.length > 0 ||
+    prog.startedAt ||
+    appState.portalMode === 'course-lobby' ||
+    appState.portalMode === 'course-focus'
+  ) {
+    prog.status = 'in_progress';
+    if (!prog.startedAt) {
+      prog.startedAt = new Date().toLocaleString('pt-BR');
+    }
+  }
+
+  updateCurrentAccessLogSnapshot();
+}
+
+function saveState(triggerCloud = false) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    syncUserProgressFromAppState();
+    localStorage.setItem(PORTAL_DB_KEY, JSON.stringify(portalDB));
+    if (appState.currentUserId) {
+      sessionStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({
+        currentUserId: appState.currentUserId,
+        currentSessionId: appState.currentSessionId,
+        portalMode: appState.portalMode,
+        activePortalTab: appState.activePortalTab,
+        activeManagerSubtab: appState.activeManagerSubtab,
+        activeCourseId: appState.activeCourseId
+      }));
+    } else {
+      sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+    }
+    if (triggerCloud) {
+      pushDatabaseToCloudSilent();
+    }
   } catch (e) {
     console.warn('Erro ao salvar estado:', e);
   }
+}
+
+// ============================================================================
+// SINCRONIZAÇÃO AUTOMÁTICA COM BANCO EM NUVEM (FIREBASE / SUPABASE)
+// ============================================================================
+function isCloudConfigured() {
+  const cfg = portalDB.cloudConfig || {};
+  if (cfg.provider === 'firebase' && cfg.firebaseUrl && cfg.firebaseUrl.startsWith('http')) return true;
+  if (cfg.provider === 'supabase' && cfg.supabaseUrl && cfg.supabaseKey) return true;
+  return false;
+}
+
+async function pushDatabaseToCloudSilent() {
+  if (!isCloudConfigured()) return false;
+  const cfg = portalDB.cloudConfig;
+  try {
+    const payload = {
+      users: portalDB.users,
+      courses: portalDB.courses,
+      progressByUser: portalDB.progressByUser,
+      accessLogs: portalDB.accessLogs,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (cfg.provider === 'firebase') {
+      const cleanUrl = cfg.firebaseUrl.replace(/\/+$/, '');
+      const res = await fetch(`${cleanUrl}/academia_dniz.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        portalDB.cloudConfig.lastSyncAt = new Date().toLocaleString('pt-BR');
+        localStorage.setItem(PORTAL_DB_KEY, JSON.stringify(portalDB));
+        updateCloudBadgesUI();
+        return true;
+      }
+    } else if (cfg.provider === 'supabase') {
+      const cleanUrl = cfg.supabaseUrl.replace(/\/+$/, '');
+      const res = await fetch(`${cleanUrl}/rest/v1/academia_dniz_state?id=eq.main`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': cfg.supabaseKey,
+          'Authorization': `Bearer ${cfg.supabaseKey}`,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({ id: 'main', payload, updated_at: new Date().toISOString() })
+      });
+      if (res.ok) {
+        portalDB.cloudConfig.lastSyncAt = new Date().toLocaleString('pt-BR');
+        localStorage.setItem(PORTAL_DB_KEY, JSON.stringify(portalDB));
+        updateCloudBadgesUI();
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('Falha ao sincronizar com a nuvem:', e);
+  }
+  return false;
+}
+
+async function pullDatabaseFromCloudSilent() {
+  if (!isCloudConfigured()) return false;
+  const cfg = portalDB.cloudConfig;
+  try {
+    let remoteData = null;
+    if (cfg.provider === 'firebase') {
+      const cleanUrl = cfg.firebaseUrl.replace(/\/+$/, '');
+      const res = await fetch(`${cleanUrl}/academia_dniz.json`);
+      if (res.ok) remoteData = await res.json();
+    } else if (cfg.provider === 'supabase') {
+      const cleanUrl = cfg.supabaseUrl.replace(/\/+$/, '');
+      const res = await fetch(`${cleanUrl}/rest/v1/academia_dniz_state?id=eq.main&select=payload`, {
+        headers: {
+          'apikey': cfg.supabaseKey,
+          'Authorization': `Bearer ${cfg.supabaseKey}`
+        }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows && rows[0] && rows[0].payload) remoteData = rows[0].payload;
+      }
+    }
+
+    if (remoteData && Array.isArray(remoteData.users)) {
+      portalDB.users = remoteData.users;
+      portalDB.courses = Array.isArray(remoteData.courses) ? remoteData.courses : DEFAULT_COURSES;
+      portalDB.progressByUser = remoteData.progressByUser || {};
+      portalDB.accessLogs = Array.isArray(remoteData.accessLogs) ? remoteData.accessLogs : [];
+      portalDB.cloudConfig.lastSyncAt = new Date().toLocaleString('pt-BR');
+      localStorage.setItem(PORTAL_DB_KEY, JSON.stringify(portalDB));
+      if (appState.currentUserId) {
+        syncAppStateFromUserProgress(appState.currentUserId, appState.activeCourseId);
+      }
+      renderAll();
+      return true;
+    }
+  } catch (e) {
+    console.warn('Falha ao buscar dados da nuvem:', e);
+  }
+  return false;
+}
+
+function updateCloudBadgesUI() {
+  const configured = isCloudConfigured();
+  const text = configured
+    ? `☁️ Nuvem Ativa (${portalDB.cloudConfig.provider.toUpperCase()})`
+    : '💾 Banco Local + Exportação/Nuvem';
+  const b1 = document.getElementById('cloudStatusBadgeLogin');
+  const b2 = document.getElementById('portalCloudIndicator');
+  if (b1) b1.textContent = text;
+  if (b2) b2.textContent = text;
+}
+
+// ============================================================================
+// CONTROLE DE ACESSO (LOGIN / LOGOUT) E CRONÔMETRO DE HORAS POR ACESSO
+// ============================================================================
+function handleLoginSubmit(event) {
+  event.preventDefault();
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+  const errBox = document.getElementById('loginErrorBox');
+
+  const typedUser = (uInput ? uInput.value : '').trim().toLowerCase();
+  const typedPass = (pInput ? pInput.value : '').trim();
+
+  const matched = portalDB.users.find(u =>
+    u.active !== false &&
+    (u.username.toLowerCase() === typedUser || (u.matricula && u.matricula.toLowerCase() === typedUser)) &&
+    u.password === typedPass
+  );
+
+  if (!matched) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = '❌ Usuário/Matrícula ou senha inválidos. Verifique com o Gestor da Academia DNIZ.';
+    }
+    return;
+  }
+
+  if (errBox) errBox.style.display = 'none';
+  loginWithUser(matched);
+}
+
+function quickFillLogin(username, password) {
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+  if (uInput) uInput.value = username;
+  if (pInput) pInput.value = password;
+  const matched = portalDB.users.find(u => u.username === username && u.password === password);
+  if (matched) loginWithUser(matched);
+}
+
+function loginWithUser(user) {
+  appState.currentUserId = user.id;
+  appState.activeCourseId = 'avsec-sbiz';
+  appState.portalMode = 'portal';
+  appState.inFocusMode = false;
+  appState.activePortalTab = user.role === 'gestor' ? 'manager' : 'catalog';
+
+  syncAppStateFromUserProgress(user.id, appState.activeCourseId);
+
+  // Cria registro de sessão no Histórico de Acessos
+  const sessionId = 'SES-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+  appState.currentSessionId = sessionId;
+
+  const nowStr = new Date().toLocaleString('pt-BR');
+  portalDB.accessLogs.unshift({
+    sessionId,
+    userId: user.id,
+    userName: user.name,
+    userMatricula: user.matricula,
+    userCargo: user.cargo,
+    courseId: appState.activeCourseId,
+    courseTitle: 'Familiarização AVSEC — SBIZ',
+    loginAt: nowStr,
+    lastActiveAt: nowStr,
+    durationSeconds: 0,
+    statusSnapshot: getReadableStatusForUser(user.id, appState.activeCourseId)
+  });
+
+  startLiveSessionTimer();
+  saveState(true);
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleLogout() {
+  stopLiveSessionTimer();
+  updateCurrentAccessLogSnapshot();
+  saveState(true);
+  appState.currentUserId = null;
+  appState.currentSessionId = null;
+  appState.portalMode = 'login';
+  appState.inFocusMode = false;
+  sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startLiveSessionTimer() {
+  stopLiveSessionTimer();
+  sessionTimerInterval = setInterval(() => {
+    if (!appState.currentUserId || !appState.currentSessionId) return;
+
+    const logItem = portalDB.accessLogs.find(l => l.sessionId === appState.currentSessionId);
+    if (logItem) {
+      logItem.durationSeconds = (logItem.durationSeconds || 0) + 1;
+      logItem.lastActiveAt = new Date().toLocaleString('pt-BR');
+    }
+
+    // Se o usuário estiver dentro de um curso, contabiliza também nas horas daquele curso
+    if (appState.portalMode === 'course-lobby' || appState.portalMode === 'course-focus') {
+      const prog = getUserCourseProgress(appState.currentUserId, appState.activeCourseId);
+      prog.totalSecondsSpent = (prog.totalSecondsSpent || 0) + 1;
+      prog.lastAccessAt = new Date().toLocaleString('pt-BR');
+    }
+
+    updateLiveSessionTimerDOM();
+
+    // Persiste a cada 10 segundos
+    if (logItem && logItem.durationSeconds % 10 === 0) {
+      updateCurrentAccessLogSnapshot();
+      localStorage.setItem(PORTAL_DB_KEY, JSON.stringify(portalDB));
+    }
+  }, 1000);
+}
+
+function stopLiveSessionTimer() {
+  if (sessionTimerInterval) {
+    clearInterval(sessionTimerInterval);
+    sessionTimerInterval = null;
+  }
+}
+
+function updateCurrentAccessLogSnapshot() {
+  if (!appState.currentUserId || !appState.currentSessionId) return;
+  const logItem = portalDB.accessLogs.find(l => l.sessionId === appState.currentSessionId);
+  if (logItem) {
+    logItem.lastActiveAt = new Date().toLocaleString('pt-BR');
+    logItem.statusSnapshot = getReadableStatusForUser(appState.currentUserId, appState.activeCourseId);
+  }
+}
+
+function updateLiveSessionTimerDOM() {
+  const sessionEl = document.getElementById('liveSessionTimer');
+  const totalEl = document.getElementById('liveTotalUserTime');
+  if (!appState.currentUserId) return;
+
+  const logItem = portalDB.accessLogs.find(l => l.sessionId === appState.currentSessionId);
+  const currentSec = logItem ? (logItem.durationSeconds || 0) : 0;
+  const totalUserSec = getTotalSecondsByUser(appState.currentUserId);
+
+  if (sessionEl) sessionEl.textContent = formatDurationHMS(currentSec);
+  if (totalEl) totalEl.textContent = formatDurationHM(totalUserSec);
+}
+
+function getTotalSecondsByUser(userId) {
+  const logsSeconds = portalDB.accessLogs
+    .filter(l => l.userId === userId)
+    .reduce((acc, item) => acc + (item.durationSeconds || 0), 0);
+  const prog = getUserCourseProgress(userId, 'avsec-sbiz');
+  return Math.max(logsSeconds, prog.totalSecondsSpent || 0);
+}
+
+function formatDurationHMS(totalSeconds) {
+  const sec = Math.max(0, Math.floor(totalSeconds || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+}
+
+function formatDurationHM(totalSeconds) {
+  const sec = Math.max(0, Math.floor(totalSeconds || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h === 0 && m === 0) return `${s}s`;
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+}
+
+function formatDecimalHours(totalSeconds) {
+  const hrs = (Math.max(0, totalSeconds || 0) / 3600).toFixed(2).replace('.', ',');
+  return `${hrs} h`;
+}
+
+// ============================================================================
+// CÁLCULO DE PROGRESSO E PONTO DE RETOMADA ("CONTINUAR DE ONDE PAROU")
+// ============================================================================
+function calculateUserCoursePercent(userId, courseId = 'avsec-sbiz') {
+  const prog = getUserCourseProgress(userId, courseId);
+  const modPct = (prog.completedModules ? prog.completedModules.length : 0) * 20;
+  const examPct = prog.finalExamPassed ? 20 : 0;
+  return Math.min(100, modPct + examPct);
 }
 
 function calculateGlobalProgress() {
   const modPct = appState.completedModules.length * 20;
   const examPct = appState.finalExamPassed ? 20 : 0;
   return Math.min(100, modPct + examPct);
+}
+
+function getReadableResumePoint(userId, courseId = 'avsec-sbiz') {
+  const prog = getUserCourseProgress(userId, courseId);
+  if (prog.finalExamPassed) {
+    return `Finalizado com Aprovação (${prog.finalExamScore}/10 • ${prog.completionDate || ''})`;
+  }
+  if (prog.status === 'not_started' && (!prog.completedModules || prog.completedModules.length === 0)) {
+    return 'Não iniciado';
+  }
+  if (prog.currentView === 'final-exam') {
+    return 'Etapa atual: Avaliação Final (10 Questões)';
+  }
+  if (prog.currentView && prog.currentView.startsWith('module-')) {
+    const modId = parseInt(prog.currentView.replace('module-', ''), 10) || 1;
+    const stepIdx = (prog.activePillByModule && prog.activePillByModule[modId]) ?? 0;
+    const stepName = stepIdx === 3 ? 'Quiz (Trava 3/3)' : `Seção ${stepIdx + 1}`;
+    return `Parou no Módulo ${modId} • ${stepName}`;
+  }
+  return 'Em andamento';
+}
+
+function getReadableStatusForUser(userId, courseId = 'avsec-sbiz') {
+  const pct = calculateUserCoursePercent(userId, courseId);
+  const prog = getUserCourseProgress(userId, courseId);
+  if (prog.finalExamPassed) {
+    return `Concluído (100% • Nota ${prog.finalExamScore}/10)`;
+  }
+  if (prog.status === 'in_progress' || pct > 0 || prog.startedAt) {
+    return `Em Andamento (${pct}% • ${getReadableResumePoint(userId, courseId)})`;
+  }
+  return 'Não Iniciou (0%)';
 }
 
 function isModuleUnlocked(modId) {
@@ -1033,11 +1563,37 @@ function generateValidationCode(name) {
 }
 
 // ============================================================================
-// RENDERIZAÇÃO GERAL (ALTERNA ENTRE LOBBY E TELA EXCLUSIVA DE IMERSÃO)
+// RENDERIZAÇÃO GERAL (LOGIN / PORTAL ACADEMIA DNIZ / CURSO / MODO FOCO)
 // ============================================================================
 function renderAll() {
+  const loginEl = document.getElementById('loginView');
+  const portalEl = document.getElementById('portalDashboardView');
   const lobbyEl = document.getElementById('lobbyView');
   const focusEl = document.getElementById('focusModeView');
+
+  updateCloudBadgesUI();
+
+  if (!appState.currentUserId || appState.portalMode === 'login') {
+    if (loginEl) loginEl.style.display = 'flex';
+    if (portalEl) portalEl.style.display = 'none';
+    if (lobbyEl) lobbyEl.style.display = 'none';
+    if (focusEl) focusEl.style.display = 'none';
+    renderLoginQuickProfiles();
+    return;
+  }
+
+  if (loginEl) loginEl.style.display = 'none';
+
+  if (appState.portalMode === 'portal') {
+    if (portalEl) portalEl.style.display = 'block';
+    if (lobbyEl) lobbyEl.style.display = 'none';
+    if (focusEl) focusEl.style.display = 'none';
+    renderPortalDashboard();
+    return;
+  }
+
+  // Modo Curso (Lobby do Curso ou Modo Foco Exclusivo)
+  if (portalEl) portalEl.style.display = 'none';
 
   if (appState.inFocusMode) {
     if (lobbyEl) lobbyEl.style.display = 'none';
@@ -1052,9 +1608,986 @@ function renderAll() {
   }
 }
 
-function exitFocusMode() {
+function renderLoginQuickProfiles() {
+  const listEl = document.getElementById('loginQuickProfilesList');
+  if (!listEl) return;
+  const activeUsers = portalDB.users.filter(u => u.active !== false);
+  listEl.innerHTML = activeUsers.map(u => {
+    const roleTag = u.role === 'gestor' ? '👑 GESTOR / ADMIN' : '👨‍✈️ COLABORADOR';
+    return `
+      <button type="button" class="quick-profile-btn" onclick="quickFillLogin('${escapeHtml(u.username)}', '${escapeHtml(u.password)}')">
+        <strong>${roleTag}: ${escapeHtml(u.name)}</strong>
+        <span>Login: <code>${escapeHtml(u.username)}</code> | Matrícula: ${escapeHtml(u.matricula)}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+// ============================================================================
+// VISÃO 1: PORTAL ACADEMIA DNIZ (CATÁLOGO, MEU HISTÓRICO E PAINEL DO GESTOR)
+// ============================================================================
+function switchPortalTab(tabId) {
+  appState.activePortalTab = tabId;
+  saveState(false);
+  renderPortalDashboard();
+}
+
+function switchManagerSubtab(subtabId) {
+  appState.activeManagerSubtab = subtabId;
+  saveState(false);
+  renderPortalDashboard();
+}
+
+function renderPortalDashboard() {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  const nameEl = document.getElementById('portalHeaderUserName');
+  const roleBadge = document.getElementById('portalUserRoleBadge');
+  const managerTabBtn = document.getElementById('tabBtn-manager');
+
+  if (nameEl) nameEl.textContent = `${user.name} (${user.matricula})`;
+  if (roleBadge) {
+    roleBadge.textContent = user.role === 'gestor' ? '👑 Gestor' : '👨‍✈️ Colaborador';
+    roleBadge.className = `role-badge ${user.role === 'gestor' ? 'gestor' : 'colaborador'}`;
+  }
+  if (managerTabBtn) {
+    managerTabBtn.style.display = user.role === 'gestor' ? 'inline-block' : 'none';
+  }
+
+  ['catalog', 'myhistory', 'manager'].forEach(t => {
+    const btn = document.getElementById(`tabBtn-${t}`);
+    if (btn) btn.classList.toggle('active', appState.activePortalTab === t);
+  });
+
+  updateLiveSessionTimerDOM();
+
+  const mainEl = document.getElementById('portalMainContainer');
+  if (!mainEl) return;
+
+  if (appState.activePortalTab === 'catalog') {
+    mainEl.innerHTML = renderCatalogTabHtml(user);
+  } else if (appState.activePortalTab === 'myhistory') {
+    mainEl.innerHTML = renderMyHistoryTabHtml(user);
+  } else if (appState.activePortalTab === 'manager' && user.role === 'gestor') {
+    mainEl.innerHTML = renderManagerTabHtml();
+  } else {
+    mainEl.innerHTML = renderCatalogTabHtml(user);
+  }
+}
+
+function renderCatalogTabHtml(user) {
+  const assignedIds = Array.isArray(user.assignedCourses) && user.assignedCourses.length
+    ? user.assignedCourses
+    : ['avsec-sbiz'];
+
+  const visibleCourses = portalDB.courses.filter(c => assignedIds.includes(c.id) || user.role === 'gestor');
+
+  const cardsHtml = visibleCourses.map(course => {
+    const prog = getUserCourseProgress(user.id, course.id);
+    const pct = calculateUserCoursePercent(user.id, course.id);
+    const resumeText = getReadableResumePoint(user.id, course.id);
+    const userLogsCount = portalDB.accessLogs.filter(l => l.userId === user.id && l.courseId === course.id).length;
+    const spentSec = prog.totalSecondsSpent || 0;
+
+    let badgeClass = 'badge-locked';
+    let badgeLabel = '⚪ Não Iniciado';
+    let btnLabel = '▶ Iniciar Curso Agora';
+    let btnClass = 'btn-primary';
+
+    if (prog.finalExamPassed) {
+      badgeClass = 'badge-completed';
+      badgeLabel = '🟢 Concluído (Aprovado)';
+      btnLabel = '🎓 Ver Curso / Emitir Certificado';
+      btnClass = 'btn-success';
+    } else if (prog.status === 'in_progress' || pct > 0 || prog.startedAt) {
+      badgeClass = 'badge-current';
+      badgeLabel = `🟡 Em Andamento (${pct}%)`;
+      btnLabel = `▶ Continuar de Onde Parei (${resumeText})`;
+      btnClass = 'btn-primary';
+    }
+
+    return `
+      <div class="lobby-module-card ${prog.finalExamPassed ? 'completed' : 'unlocked'}">
+        <div>
+          <div class="lobby-card-top">
+            <span class="lobby-code-tag">${escapeHtml(course.code)} • Carga Prevista: ${course.workloadHours}h</span>
+            <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+          </div>
+          <h4>${escapeHtml(course.title)}</h4>
+          <p style="margin-bottom:0.85rem;">${escapeHtml(course.description)}</p>
+
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:0.75rem 0.95rem; margin-bottom:1rem; font-size:0.82rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem;">
+              <span>📍 <strong>Andamento:</strong> ${escapeHtml(resumeText)}</span>
+              <strong style="color:var(--nav-blue);">${pct}%</strong>
+            </div>
+            <div class="progress-track" style="width:100%; margin-bottom:0.55rem;">
+              <div class="progress-fill" style="width:${pct}%;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; color:var(--nav-muted); font-size:0.77rem;">
+              <span>⏱️ Tempo dedicado: <strong>${formatDurationHM(spentSec)} (${formatDecimalHours(spentSec)})</strong></span>
+              <span>🔑 Acessos: <strong>${userLogsCount}</strong></span>
+              <span>📅 Último acesso: <strong>${prog.lastAccessAt || '—'}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+          <button type="button" class="btn ${btnClass}" style="flex:1;" onclick="openCourseFromPortal('${course.id}', false)">
+            ${btnLabel}
+          </button>
+          ${prog.finalExamPassed ? `
+            <button type="button" class="btn btn-outline" onclick="openCourseCertificateDirect('${user.id}', '${course.id}')">
+              🖨️ Certificado
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const totalSec = getTotalSecondsByUser(user.id);
+  const myAccessCount = portalDB.accessLogs.filter(l => l.userId === user.id).length;
+  const completedCount = visibleCourses.filter(c => getUserCourseProgress(user.id, c.id).finalExamPassed).length;
+
+  return `
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span>Perfil Conectado</span>
+        <strong style="font-size:1.15rem;">${escapeHtml(user.name)}</strong>
+        <small>Matrícula: ${escapeHtml(user.matricula)} • ${escapeHtml(user.cargo)}</small>
+      </div>
+      <div class="kpi-card success">
+        <span>Cursos Concluídos</span>
+        <strong>${completedCount} / ${visibleCourses.length}</strong>
+        <small>Certificados digitais habilitados</small>
+      </div>
+      <div class="kpi-card warning">
+        <span>Quantidade de Acessos</span>
+        <strong>${myAccessCount}</strong>
+        <small>Sessões registradas no seu perfil</small>
+      </div>
+      <div class="kpi-card gold">
+        <span>Horas de Estudo Acumuladas</span>
+        <strong>${formatDurationHM(totalSec)}</strong>
+        <small>Equivalente a ${formatDecimalHours(totalSec)} registradas</small>
+      </div>
+    </div>
+
+    <section class="lobby-modules-section">
+      <div class="lobby-section-header">
+        <h3>📚 Cursos Disponíveis para o Seu Perfil (${visibleCourses.length})</h3>
+        <span class="lobby-rule-badge">💾 Você pode entrar, avançar nas seções e pausar para finalizar depois a qualquer momento</span>
+      </div>
+      <div class="lobby-grid">
+        ${cardsHtml}
+      </div>
+    </section>
+  `;
+}
+
+function renderMyHistoryTabHtml(user) {
+  const myLogs = portalDB.accessLogs.filter(l => l.userId === user.id);
+  const totalSec = getTotalSecondsByUser(user.id);
+  const prog = getUserCourseProgress(user.id, 'avsec-sbiz');
+
+  const rowsHtml = myLogs.length ? myLogs.map((log, idx) => `
+    <tr>
+      <td><strong>#${myLogs.length - idx}</strong></td>
+      <td>${escapeHtml(log.courseTitle || 'Familiarização AVSEC — SBIZ')}</td>
+      <td>${escapeHtml(log.loginAt)}</td>
+      <td>${escapeHtml(log.lastActiveAt)}</td>
+      <td><strong>${formatDurationHMS(log.durationSeconds)}</strong> <span style="color:var(--nav-muted);">(${formatDecimalHours(log.durationSeconds)})</span></td>
+      <td><span class="status-badge ${log.statusSnapshot && log.statusSnapshot.includes('Concluído') ? 'badge-completed' : 'badge-current'}">${escapeHtml(log.statusSnapshot || 'Em andamento')}</span></td>
+    </tr>
+  `).join('') : `
+    <tr>
+      <td colspan="6" style="text-align:center; padding:1.5rem; color:var(--nav-muted);">Nenhum acesso registrado ainda.</td>
+    </tr>
+  `;
+
+  return `
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <div>
+          <h3>🎓 Meus Certificados Emitidos</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">Comprovantes digitais oficiais com código de validação da Academia DNIZ (SBIZ).</p>
+        </div>
+      </div>
+      ${prog.finalExamPassed ? `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; background:#ECFDF5; border:1.5px solid #10B981; padding:1rem 1.25rem; border-radius:12px;">
+          <div>
+            <strong style="color:#065F46; font-size:1rem;">✅ Treinamento de Familiarização AVSEC — NAV Brasil (SBIZ)</strong>
+            <div style="font-size:0.83rem; color:#047857; margin-top:0.2rem;">
+              Concluído em: <strong>${escapeHtml(prog.completionDate)}</strong> • Nota Final: <strong>${prog.finalExamScore}/10 (${prog.finalExamScore * 10}%)</strong> • Código: <code>${escapeHtml(prog.validationCode)}</code>
+            </div>
+          </div>
+          <button type="button" class="btn btn-success btn-sm" onclick="openCourseCertificateDirect('${user.id}', 'avsec-sbiz')">
+            🎓 Visualizar / Imprimir Certificado PDF
+          </button>
+        </div>
+      ` : `
+        <p style="font-size:0.88rem; color:var(--nav-muted);">Você ainda não possui certificados emitidos. Conclua os 4 módulos e a Avaliação Final (mínimo 80%) para gerar seu certificado.</p>
+      `}
+    </div>
+
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <div>
+          <h3>🕒 Histórico Completo de Acessos e Quantidade de Horas por Acesso</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">
+            Total acumulado no perfil: <strong>${formatDurationHMS(totalSec)} (${formatDecimalHours(totalSec)})</strong> em <strong>${myLogs.length} acesso(s)</strong>.
+          </p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th>Acesso</th>
+              <th>Curso</th>
+              <th>Início do Acesso</th>
+              <th>Última Atividade / Saída</th>
+              <th>Horas / Tempo neste Acesso</th>
+              <th>Status / Progresso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================================
+// PAINEL DO GESTOR (RELATÓRIOS POR PERFIL, CONTROLE DE HORAS, USUÁRIOS E NUVEM)
+// ============================================================================
+function renderManagerTabHtml() {
+  const totalUsers = portalDB.users.length;
+  let completedUsers = 0;
+  let inProgressUsers = 0;
+  let notStartedUsers = 0;
+  let unitTotalSeconds = 0;
+
+  portalDB.users.forEach(u => {
+    const prog = getUserCourseProgress(u.id, 'avsec-sbiz');
+    const pct = calculateUserCoursePercent(u.id, 'avsec-sbiz');
+    unitTotalSeconds += getTotalSecondsByUser(u.id);
+    if (prog.finalExamPassed) completedUsers++;
+    else if (prog.status === 'in_progress' || pct > 0 || prog.startedAt) inProgressUsers++;
+    else notStartedUsers++;
+  });
+
+  const subtab = appState.activeManagerSubtab || 'reports';
+
+  let subtabContent = '';
+  if (subtab === 'reports') {
+    subtabContent = renderManagerReportsSubtab();
+  } else if (subtab === 'users') {
+    subtabContent = renderManagerUsersSubtab();
+  } else if (subtab === 'courses') {
+    subtabContent = renderManagerCoursesSubtab();
+  } else if (subtab === 'cloud') {
+    subtabContent = renderManagerCloudSubtab();
+  }
+
+  return `
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span>Perfis Cadastrados</span>
+        <strong>${totalUsers}</strong>
+        <small>Colaboradores e Gestores na DNB-IZ</small>
+      </div>
+      <div class="kpi-card success">
+        <span>Finalizaram o Curso</span>
+        <strong>${completedUsers}</strong>
+        <small>Com Certificado AVSEC emitido</small>
+      </div>
+      <div class="kpi-card warning">
+        <span>Em Andamento / Não Iniciaram</span>
+        <strong>${inProgressUsers} / ${notStartedUsers}</strong>
+        <small>${inProgressUsers} iniciaram • ${notStartedUsers} não iniciaram</small>
+      </div>
+      <div class="kpi-card gold">
+        <span>Carga Horária Total da Unidade</span>
+        <strong>${formatDurationHM(unitTotalSeconds)}</strong>
+        <small>${formatDecimalHours(unitTotalSeconds)} em ${portalDB.accessLogs.length} acessos</small>
+      </div>
+    </div>
+
+    <div class="manager-subnav no-print">
+      <button type="button" class="manager-subtab-btn ${subtab === 'reports' ? 'active' : ''}" onclick="switchManagerSubtab('reports')">
+        📊 Acompanhamento de Progresso, Horas e Certificados
+      </button>
+      <button type="button" class="manager-subtab-btn ${subtab === 'users' ? 'active' : ''}" onclick="switchManagerSubtab('users')">
+        👥 Cadastrar / Gerenciar Perfis de Acesso (${portalDB.users.length})
+      </button>
+      <button type="button" class="manager-subtab-btn ${subtab === 'courses' ? 'active' : ''}" onclick="switchManagerSubtab('courses')">
+        📚 Base de Cursos da Unidade (${portalDB.courses.length})
+      </button>
+      <button type="button" class="manager-subtab-btn ${subtab === 'cloud' ? 'active' : ''}" onclick="switchManagerSubtab('cloud')">
+        ☁️ Sincronização Nuvem (Supabase / Firebase) & Backup
+      </button>
+    </div>
+
+    ${subtabContent}
+  `;
+}
+
+function renderManagerReportsSubtab() {
+  const rowsHtml = portalDB.users.map(u => {
+    const prog = getUserCourseProgress(u.id, 'avsec-sbiz');
+    const pct = calculateUserCoursePercent(u.id, 'avsec-sbiz');
+    const userLogs = portalDB.accessLogs.filter(l => l.userId === u.id);
+    const totalSec = getTotalSecondsByUser(u.id);
+    const avgSec = userLogs.length ? Math.round(totalSec / userLogs.length) : 0;
+    const resumePoint = getReadableResumePoint(u.id, 'avsec-sbiz');
+
+    let statusBadge = `<span class="status-badge badge-locked">⚪ Não Iniciou</span>`;
+    if (prog.finalExamPassed) {
+      statusBadge = `<span class="status-badge badge-completed">🟢 Finalizou (${prog.finalExamScore}/10)</span>`;
+    } else if (prog.status === 'in_progress' || pct > 0 || prog.startedAt) {
+      statusBadge = `<span class="status-badge badge-current">🟡 Iniciou (${pct}%)</span>`;
+    }
+
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(u.name)}</strong>
+          <div style="font-size:0.75rem; color:var(--nav-muted);">Matrícula: ${escapeHtml(u.matricula)} • Login: <code>${escapeHtml(u.username)}</code></div>
+          <div style="font-size:0.74rem; color:var(--nav-blue); font-weight:600;">${escapeHtml(u.cargo)}</div>
+        </td>
+        <td>${statusBadge}</td>
+        <td>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--nav-navy);">${escapeHtml(resumePoint)}</div>
+          <div class="progress-track" style="width:140px; margin-top:0.3rem;">
+            <div class="progress-fill" style="width:${pct}%;"></div>
+          </div>
+        </td>
+        <td>
+          <strong>${userLogs.length} acesso(s)</strong>
+          <div style="font-size:0.74rem; color:var(--nav-muted);">Último: ${escapeHtml(prog.lastAccessAt || (userLogs[0] ? userLogs[0].lastActiveAt : 'Nunca'))}</div>
+        </td>
+        <td>
+          <strong>${formatDurationHMS(totalSec)}</strong>
+          <div style="font-size:0.75rem; color:var(--nav-muted);">Total: ${formatDecimalHours(totalSec)} | Média/acesso: ${formatDurationHM(avgSec)}</div>
+        </td>
+        <td>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="openUserAccessHistoryModal('${u.id}')">
+              🕒 Horas por Acesso (${userLogs.length})
+            </button>
+            ${prog.finalExamPassed ? `
+              <button type="button" class="btn btn-success btn-sm" onclick="openCourseCertificateDirect('${u.id}', 'avsec-sbiz')">
+                🎓 Certificado
+              </button>
+            ` : ''}
+            <button type="button" class="btn btn-outline btn-sm" onclick="managerResetUserCourse('${u.id}')" title="Zerar andamento deste perfil">
+              🔄 Resetar
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <div>
+          <h3>📊 Relatório Gerencial de Andamento, Status e Horas por Perfil</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">
+            Acompanhe quem ainda não iniciou, quem está em andamento (e onde parou) e quem já finalizou com emissão de certificado.
+          </p>
+        </div>
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="exportManagerReportCSV()">
+            📥 Exportar Planilha (CSV / Excel)
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+            🖨️ Imprimir Relatório
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th>Colaborador / Perfil</th>
+              <th>Status no Curso</th>
+              <th>Progresso / Onde Parou</th>
+              <th>Qtd. Acessos</th>
+              <th>Horas Acumuladas & Média</th>
+              <th>Ações do Gestor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openUserAccessHistoryModal(userId) {
+  const user = portalDB.users.find(u => u.id === userId);
+  if (!user) return;
+  const userLogs = portalDB.accessLogs.filter(l => l.userId === userId);
+  const totalSec = getTotalSecondsByUser(userId);
+  const prog = getUserCourseProgress(userId, 'avsec-sbiz');
+
+  const rows = userLogs.length ? userLogs.map((l, i) => `
+    <tr>
+      <td><strong>#${userLogs.length - i}</strong></td>
+      <td>${escapeHtml(l.loginAt)}</td>
+      <td>${escapeHtml(l.lastActiveAt)}</td>
+      <td><strong>${formatDurationHMS(l.durationSeconds)}</strong> (${formatDecimalHours(l.durationSeconds)})</td>
+      <td>${escapeHtml(l.statusSnapshot || '-')}</td>
+    </tr>
+  `).join('') : `
+    <tr><td colspan="5" style="text-align:center; padding:1rem;">Nenhum acesso registrado para este perfil.</td></tr>
+  `;
+
+  const cardEl = document.getElementById('modalCardContainer');
+  if (cardEl) cardEl.classList.add('wide');
+
+  showModal({
+    type: 'success',
+    title: `Histórico de Acessos — ${user.name} (${user.matricula})`,
+    message: `
+      <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:10px; padding:0.85rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
+        <div><strong>Cargo/Função:</strong> ${escapeHtml(user.cargo)} | <strong>Status Atual:</strong> ${escapeHtml(getReadableStatusForUser(user.id, 'avsec-sbiz'))}</div>
+        <div style="margin-top:0.3rem;">
+          <strong>Total de Acessos:</strong> ${userLogs.length} |
+          <strong>Tempo Total Registrado:</strong> ${formatDurationHMS(totalSec)} (${formatDecimalHours(totalSec)})
+          ${prog.validationCode ? ` | <strong>Certificado:</strong> <code>${escapeHtml(prog.validationCode)}</code>` : ''}
+        </div>
+      </div>
+      <div class="table-responsive" style="max-height:320px; overflow-y:auto;">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th>Nº</th>
+              <th>Entrada</th>
+              <th>Saída / Última Ação</th>
+              <th>Horas / Duração do Acesso</th>
+              <th>Progresso na Sessão</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `,
+    buttonText: 'Fechar Histórico',
+    onConfirm: () => {
+      if (cardEl) cardEl.classList.remove('wide');
+    }
+  });
+}
+
+function renderManagerUsersSubtab() {
+  const userRows = portalDB.users.map(u => `
+    <tr>
+      <td><strong>${escapeHtml(u.name)}</strong></td>
+      <td><code>${escapeHtml(u.username)}</code></td>
+      <td><code>${escapeHtml(u.password)}</code></td>
+      <td>${escapeHtml(u.matricula)}</td>
+      <td>${escapeHtml(u.cargo)}</td>
+      <td><span class="role-badge ${u.role === 'gestor' ? 'gestor' : 'colaborador'}">${u.role === 'gestor' ? 'Gestor' : 'Colaborador'}</span></td>
+      <td>
+        <div style="display:flex; gap:0.4rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="populateUserFormForEdit('${u.id}')">✏️ Editar</button>
+          ${u.id !== appState.currentUserId ? `
+            <button type="button" class="btn btn-outline btn-sm" style="color:#B91C1C; border-color:#FCA5A5;" onclick="deleteUserProfile('${u.id}')">🗑️ Excluir</button>
+          ` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <div>
+          <h3 id="userFormHeading">➕ Cadastrar Novo Perfil de Acesso (Definido pelo Gestor)</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">Crie logins individuais para os colaboradores da DNB-IZ acompanharem seus cursos e emitirem certificados.</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleSaveUserProfile(event)">
+        <input type="hidden" id="editUserIdInput" value="" />
+        <div class="form-grid-2" style="margin-bottom:1rem;">
+          <div class="form-group">
+            <label>Nome Completo do Empregado *</label>
+            <input type="text" id="mgrUserName" class="portal-input" placeholder="Ex: João Silva Santos" required />
+          </div>
+          <div class="form-group">
+            <label>Matrícula / Identificação *</label>
+            <input type="text" id="mgrUserMatricula" class="portal-input" placeholder="Ex: NAV-1045" required />
+          </div>
+          <div class="form-group">
+            <label>Cargo / Função na Unidade (SBIZ) *</label>
+            <input type="text" id="mgrUserCargo" class="portal-input" placeholder="Ex: Operador de Estação Aeronáutica (OEA)" required />
+          </div>
+          <div class="form-group">
+            <label>Tipo de Perfil *</label>
+            <select id="mgrUserRole" class="portal-select">
+              <option value="colaborador">👨‍✈️ Colaborador / Treinando (Realiza cursos)</option>
+              <option value="gestor">👑 Gestor / Administrador (Acesso total e relatórios)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Usuário de Login *</label>
+            <input type="text" id="mgrUserLogin" class="portal-input" placeholder="Ex: joao.silva" required />
+          </div>
+          <div class="form-group">
+            <label>Senha de Acesso *</label>
+            <input type="text" id="mgrUserPass" class="portal-input" placeholder="Ex: 1234" required />
+          </div>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+          <button type="submit" class="btn btn-primary">💾 Salvar Perfil de Acesso</button>
+          <button type="button" class="btn btn-outline" onclick="clearUserForm()">Limpar Formulário</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <h3>👥 Perfis Cadastrados na Unidade (${portalDB.users.length})</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th>Nome Completo</th>
+              <th>Login</th>
+              <th>Senha</th>
+              <th>Matrícula</th>
+              <th>Cargo / Setor</th>
+              <th>Nível</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>${userRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function handleSaveUserProfile(event) {
+  event.preventDefault();
+  const editId = document.getElementById('editUserIdInput').value.trim();
+  const name = document.getElementById('mgrUserName').value.trim();
+  const matricula = document.getElementById('mgrUserMatricula').value.trim();
+  const cargo = document.getElementById('mgrUserCargo').value.trim();
+  const role = document.getElementById('mgrUserRole').value;
+  const username = document.getElementById('mgrUserLogin').value.trim();
+  const password = document.getElementById('mgrUserPass').value.trim();
+
+  if (!name || !username || !password) return;
+
+  const duplicate = portalDB.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== editId);
+  if (duplicate) {
+    showModal({
+      type: 'warning',
+      title: 'Login já existente',
+      message: `O login <strong>${escapeHtml(username)}</strong> já está sendo utilizado por outro perfil.`,
+      buttonText: 'OK'
+    });
+    return;
+  }
+
+  if (editId) {
+    const target = portalDB.users.find(u => u.id === editId);
+    if (target) {
+      target.name = name;
+      target.matricula = matricula;
+      target.cargo = cargo;
+      target.role = role;
+      target.username = username;
+      target.password = password;
+    }
+  } else {
+    const newId = 'usr-' + Date.now();
+    portalDB.users.push({
+      id: newId,
+      username,
+      password,
+      name,
+      matricula,
+      cargo,
+      role,
+      assignedCourses: portalDB.courses.map(c => c.id),
+      active: true
+    });
+  }
+
+  saveState(true);
+  renderPortalDashboard();
+  showModal({
+    type: 'success',
+    title: 'Perfil Salvo com Sucesso!',
+    message: `O perfil de <strong>${escapeHtml(name)}</strong> (Login: <code>${escapeHtml(username)}</code> / Senha: <code>${escapeHtml(password)}</code>) já está liberado para acesso na Academia DNIZ.`,
+    buttonText: 'Perfeito'
+  });
+}
+
+function populateUserFormForEdit(userId) {
+  const u = portalDB.users.find(item => item.id === userId);
+  if (!u) return;
+  document.getElementById('editUserIdInput').value = u.id;
+  document.getElementById('mgrUserName').value = u.name;
+  document.getElementById('mgrUserMatricula').value = u.matricula;
+  document.getElementById('mgrUserCargo').value = u.cargo;
+  document.getElementById('mgrUserRole').value = u.role;
+  document.getElementById('mgrUserLogin').value = u.username;
+  document.getElementById('mgrUserPass').value = u.password;
+  const heading = document.getElementById('userFormHeading');
+  if (heading) heading.textContent = `✏️ Editando Perfil: ${u.name}`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearUserForm() {
+  document.getElementById('editUserIdInput').value = '';
+  document.getElementById('mgrUserName').value = '';
+  document.getElementById('mgrUserMatricula').value = '';
+  document.getElementById('mgrUserCargo').value = '';
+  document.getElementById('mgrUserLogin').value = '';
+  document.getElementById('mgrUserPass').value = '';
+  const heading = document.getElementById('userFormHeading');
+  if (heading) heading.textContent = '➕ Cadastrar Novo Perfil de Acesso (Definido pelo Gestor)';
+}
+
+function deleteUserProfile(userId) {
+  const u = portalDB.users.find(item => item.id === userId);
+  if (!u) return;
+  if (!confirm(`Deseja realmente excluir o perfil de "${u.name}"?`)) return;
+  portalDB.users = portalDB.users.filter(item => item.id !== userId);
+  saveState(true);
+  renderPortalDashboard();
+}
+
+function managerResetUserCourse(userId) {
+  const u = portalDB.users.find(item => item.id === userId);
+  if (!u) return;
+  if (!confirm(`Deseja zerar o progresso do curso de "${u.name}" para nova realização/reciclagem?`)) return;
+  portalDB.progressByUser[userId] = { 'avsec-sbiz': createDefaultUserCourseProgress() };
+  if (userId === appState.currentUserId) {
+    syncAppStateFromUserProgress(userId, 'avsec-sbiz');
+  }
+  saveState(true);
+  renderPortalDashboard();
+}
+
+function renderManagerCoursesSubtab() {
+  const rows = portalDB.courses.map(c => `
+    <tr>
+      <td><strong>${escapeHtml(c.code)}</strong></td>
+      <td>
+        <strong>${escapeHtml(c.title)}</strong>
+        <div style="font-size:0.76rem; color:var(--nav-muted);">${escapeHtml(c.normas || '')}</div>
+      </td>
+      <td>${escapeHtml(c.category || 'Operacional')}</td>
+      <td><strong>${c.workloadHours}h</strong></td>
+      <td><span class="status-badge badge-completed">Ativo no Catálogo</span></td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <div>
+          <h3>➕ Adicionar Novo Curso na Base da Academia DNIZ</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">Expanda o catálogo da unidade (ex.: SMS/SGSO, Procedimentos AFIS, Manutenção CNS, Fraseologia).</p>
+        </div>
+      </div>
+      <form onsubmit="handleAddCourseCatalog(event)">
+        <div class="form-grid-2" style="margin-bottom:1rem;">
+          <div class="form-group">
+            <label>Título do Treinamento *</label>
+            <input type="text" id="newCourseTitle" class="portal-input" placeholder="Ex: Treinamento de Reciclagem SMS / SGSO — SBIZ" required />
+          </div>
+          <div class="form-group">
+            <label>Código do Curso *</label>
+            <input type="text" id="newCourseCode" class="portal-input" placeholder="Ex: SMS-SBIZ-02" required />
+          </div>
+          <div class="form-group">
+            <label>Carga Horária Prevista (Horas) *</label>
+            <input type="number" id="newCourseHours" class="portal-input" value="4" min="1" required />
+          </div>
+          <div class="form-group">
+            <label>Normas de Referência</label>
+            <input type="text" id="newCourseNormas" class="portal-input" placeholder="Ex: DCA 63-3 • ICA 63-33 • Manual SGSO NAV Brasil" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label>Descrição do Curso *</label>
+          <input type="text" id="newCourseDesc" class="portal-input" placeholder="Resumo dos módulos e objetivos de capacitação..." required />
+        </div>
+        <button type="submit" class="btn btn-primary">📚 Incluir Curso no Catálogo da Unidade</button>
+      </form>
+    </div>
+
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <h3>📚 Cursos Cadastrados na Academia DNIZ (${portalDB.courses.length})</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Título e Base Normativa</th>
+              <th>Área</th>
+              <th>Carga Horária</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function handleAddCourseCatalog(event) {
+  event.preventDefault();
+  const title = document.getElementById('newCourseTitle').value.trim();
+  const code = document.getElementById('newCourseCode').value.trim();
+  const workloadHours = parseInt(document.getElementById('newCourseHours').value, 10) || 4;
+  const normas = document.getElementById('newCourseNormas').value.trim();
+  const description = document.getElementById('newCourseDesc').value.trim();
+
+  if (!title || !code) return;
+  const newCourseId = 'course-' + Date.now();
+  portalDB.courses.push({
+    id: newCourseId,
+    code,
+    title,
+    category: 'Capacitação DNB-IZ',
+    workloadHours,
+    normas,
+    description,
+    status: 'active',
+    hasInteractiveEngine: true
+  });
+
+  portalDB.users.forEach(u => {
+    if (!Array.isArray(u.assignedCourses)) u.assignedCourses = [];
+    if (!u.assignedCourses.includes(newCourseId)) u.assignedCourses.push(newCourseId);
+  });
+
+  saveState(true);
+  renderPortalDashboard();
+  showModal({
+    type: 'success',
+    title: 'Curso Adicionado à Academia DNIZ!',
+    message: `O curso <strong>${escapeHtml(title)}</strong> foi cadastrado e disponibilizado para os perfis da unidade.`,
+    buttonText: 'OK'
+  });
+}
+
+function renderManagerCloudSubtab() {
+  const cfg = portalDB.cloudConfig || {};
+  return `
+    <div class="portal-panel-card">
+      <div class="portal-panel-header">
+        <div>
+          <h3>☁️ Integração com Banco de Dados em Nuvem Gratuito (Firebase / Supabase)</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">
+            Configure abaixo para sincronizar automaticamente os acessos, horas de estudo e certificados entre computadores diferentes no GitHub Pages.
+          </p>
+        </div>
+        <span class="status-badge ${isCloudConfigured() ? 'badge-completed' : 'badge-current'}">
+          ${isCloudConfigured() ? '✓ Nuvem Conectada' : 'Modo Local + Backup Ativo'}
+        </span>
+      </div>
+
+      <form onsubmit="handleSaveCloudConfig(event)">
+        <div class="form-grid-2" style="margin-bottom:1rem;">
+          <div class="form-group">
+            <label>Provedor de Nuvem</label>
+            <select id="cloudProviderSelect" class="portal-select">
+              <option value="firebase" ${cfg.provider === 'firebase' ? 'selected' : ''}>🔥 Google Firebase Realtime Database (Mais Simples — Só 1 URL)</option>
+              <option value="supabase" ${cfg.provider === 'supabase' ? 'selected' : ''}>⚡ Supabase PostgreSQL REST API (URL + Anon Key)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>URL do Firebase Realtime Database (se usar Firebase)</label>
+            <input type="text" id="cloudFirebaseUrl" class="portal-input" placeholder="Ex: https://academia-dniz-default-rtdb.firebaseio.com" value="${escapeHtml(cfg.firebaseUrl || '')}" />
+          </div>
+          <div class="form-group">
+            <label>Supabase Project URL (se usar Supabase)</label>
+            <input type="text" id="cloudSupabaseUrl" class="portal-input" placeholder="Ex: https://xyzcompany.supabase.co" value="${escapeHtml(cfg.supabaseUrl || '')}" />
+          </div>
+          <div class="form-group">
+            <label>Supabase Anon Public Key (se usar Supabase)</label>
+            <input type="password" id="cloudSupabaseKey" class="portal-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI..." value="${escapeHtml(cfg.supabaseKey || '')}" />
+          </div>
+        </div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button type="submit" class="btn btn-primary">☁️ Salvar e Sincronizar com a Nuvem</button>
+          <button type="button" class="btn btn-outline" onclick="manualCloudPull()">🔄 Baixar Dados da Nuvem Agora</button>
+          <button type="button" class="btn btn-outline" onclick="exportDatabaseJSON()">💾 Exportar Backup Completo (.JSON)</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+async function handleSaveCloudConfig(event) {
+  event.preventDefault();
+  portalDB.cloudConfig.provider = document.getElementById('cloudProviderSelect').value;
+  portalDB.cloudConfig.firebaseUrl = document.getElementById('cloudFirebaseUrl').value.trim();
+  portalDB.cloudConfig.supabaseUrl = document.getElementById('cloudSupabaseUrl').value.trim();
+  portalDB.cloudConfig.supabaseKey = document.getElementById('cloudSupabaseKey').value.trim();
+  saveState(false);
+
+  if (isCloudConfigured()) {
+    const ok = await pushDatabaseToCloudSilent();
+    showModal({
+      type: ok ? 'success' : 'warning',
+      title: ok ? 'Sincronizado com a Nuvem!' : 'Configuração Salva',
+      message: ok
+        ? 'Os perfis, progresso e histórico de acessos foram sincronizados com sucesso no banco em nuvem!'
+        : 'Configuração salva. Verifique se a URL/Chave permite leitura/escrita pública ou tente novamente.',
+      buttonText: 'OK'
+    });
+  } else {
+    showModal({
+      type: 'success',
+      title: 'Modo Local Mantido',
+      message: 'Os dados continuam salvos localmente no navegador com opção de exportação CSV/JSON.',
+      buttonText: 'OK'
+    });
+  }
+  renderPortalDashboard();
+}
+
+async function manualCloudPull() {
+  const ok = await pullDatabaseFromCloudSilent();
+  showModal({
+    type: ok ? 'success' : 'warning',
+    title: ok ? 'Dados Atualizados da Nuvem!' : 'Não foi possível buscar da Nuvem',
+    message: ok
+      ? 'Todos os perfis, históricos de acesso e certificados foram atualizados a partir da nuvem.'
+      : 'Verifique se as credenciais da nuvem estão preenchidas corretamente.',
+    buttonText: 'OK'
+  });
+}
+
+function exportDatabaseJSON() {
+  const blob = new Blob([JSON.stringify(portalDB, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup_academia_dniz_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportManagerReportCSV() {
+  const headers = ['Nome', 'Matricula', 'Login', 'Cargo', 'Status_Curso', 'Progresso_Pct', 'Onde_Parou', 'Qtd_Acessos', 'Tempo_Total_HMS', 'Horas_Decimais', 'Nota_Final', 'Data_Conclusao', 'Codigo_Certificado'];
+  const lines = [headers.join(';')];
+
+  portalDB.users.forEach(u => {
+    const prog = getUserCourseProgress(u.id, 'avsec-sbiz');
+    const pct = calculateUserCoursePercent(u.id, 'avsec-sbiz');
+    const logsCount = portalDB.accessLogs.filter(l => l.userId === u.id).length;
+    const totalSec = getTotalSecondsByUser(u.id);
+    const statusStr = prog.finalExamPassed ? 'Finalizado' : (pct > 0 || prog.startedAt ? 'Em Andamento' : 'Nao Iniciou');
+
+    const row = [
+      `"${u.name}"`,
+      `"${u.matricula}"`,
+      `"${u.username}"`,
+      `"${u.cargo}"`,
+      `"${statusStr}"`,
+      `${pct}%`,
+      `"${getReadableResumePoint(u.id, 'avsec-sbiz')}"`,
+      logsCount,
+      `"${formatDurationHMS(totalSec)}"`,
+      `"${formatDecimalHours(totalSec)}"`,
+      prog.finalExamScore !== null ? `${prog.finalExamScore}/10` : '-',
+      `"${prog.completionDate || '-'}"`,
+      `"${prog.validationCode || '-'}"`
+    ];
+    lines.push(row.join(';'));
+  });
+
+  const csvContent = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `relatorio_academia_dniz_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================================
+// TRANSIÇÃO ENTRE PORTAL E CURSO (CONTINUAR DE ONDE PAROU)
+// ============================================================================
+function openCourseFromPortal(courseId, goStraightToFocus = false) {
+  if (!appState.currentUserId) return;
+  appState.activeCourseId = courseId || 'avsec-sbiz';
+  appState.inspectingUserIdForCert = null;
+
+  const prog = getUserCourseProgress(appState.currentUserId, appState.activeCourseId);
+  if (!prog.startedAt) {
+    prog.startedAt = new Date().toLocaleString('pt-BR');
+  }
+  if (prog.status === 'not_started') {
+    prog.status = 'in_progress';
+  }
+  prog.lastAccessAt = new Date().toLocaleString('pt-BR');
+
+  syncAppStateFromUserProgress(appState.currentUserId, appState.activeCourseId);
+
+  appState.portalMode = 'course-lobby';
+  appState.inFocusMode = goStraightToFocus;
+  saveState(true);
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openCourseCertificateDirect(targetUserId, courseId = 'avsec-sbiz') {
+  const prog = getUserCourseProgress(targetUserId, courseId);
+  if (!prog.finalExamPassed) return;
+  appState.inspectingUserIdForCert = targetUserId;
+  appState.activeCourseId = courseId;
+  appState.portalMode = 'course-focus';
+  appState.currentView = 'certificate';
+  appState.inFocusMode = true;
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function returnToPortalCatalog() {
+  appState.inspectingUserIdForCert = null;
   appState.inFocusMode = false;
-  saveState();
+  appState.portalMode = 'portal';
+  saveState(true);
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function exitFocusMode() {
+  if (appState.inspectingUserIdForCert && appState.inspectingUserIdForCert !== appState.currentUserId) {
+    returnToPortalCatalog();
+    return;
+  }
+  appState.inFocusMode = false;
+  appState.portalMode = 'course-lobby';
+  saveState(true);
   renderAll();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1075,14 +2608,34 @@ function renderHeaderProgress() {
 }
 
 function renderEmployeeBar() {
-  const nameInput = document.getElementById('employeeNameInput');
-  const idInput = document.getElementById('employeeIdInput');
+  const user = getCurrentUser();
   const badgeName = document.getElementById('headerUserName');
+  const welcomeHeading = document.getElementById('courseWelcomeHeading');
+  const resumeHint = document.getElementById('courseResumeHint');
+  const resumeActionBox = document.getElementById('courseResumeActionBox');
 
-  if (nameInput && document.activeElement !== nameInput) nameInput.value = appState.employeeName || '';
-  if (idInput && document.activeElement !== idInput) idInput.value = appState.employeeId || '';
-  if (badgeName) {
-    badgeName.textContent = appState.employeeName.trim() ? appState.employeeName.trim() : 'Empregado não identificado';
+  if (badgeName && user) {
+    badgeName.textContent = `${user.name} (${user.matricula})`;
+  }
+  if (welcomeHeading && user) {
+    welcomeHeading.textContent = `Olá, ${user.name}! Bem-vindo(a) à Trilha Interativa AVSEC (SBIZ)`;
+  }
+  if (resumeHint && user) {
+    const resumeText = getReadableResumePoint(user.id, appState.activeCourseId);
+    const spent = getUserCourseProgress(user.id, appState.activeCourseId).totalSecondsSpent || 0;
+    resumeHint.innerHTML = `📍 <strong>Status atual:</strong> ${escapeHtml(resumeText)} &nbsp;|&nbsp; ⏱️ <strong>Tempo neste curso:</strong> ${formatDurationHM(spent)} (${formatDecimalHours(spent)}). Você pode sair e continuar depois a qualquer momento.`;
+  }
+  if (resumeActionBox && user) {
+    const prog = getUserCourseProgress(user.id, appState.activeCourseId);
+    const targetView = prog.finalExamPassed ? 'certificate' : (prog.currentView || 'module-1');
+    const btnLabel = prog.finalExamPassed
+      ? '🎓 Abrir Meu Certificado Digital'
+      : `▶ Continuar de Onde Parei (${getReadableResumePoint(user.id, appState.activeCourseId)})`;
+    resumeActionBox.innerHTML = `
+      <button type="button" class="btn btn-primary" onclick="navigateToView('${targetView}')">
+        ${btnLabel}
+      </button>
+    `;
   }
 }
 
@@ -1098,7 +2651,10 @@ function renderLobbyGrid() {
     const cardState = completed ? 'completed' : (unlocked ? 'unlocked' : 'locked');
     const badgeClass = completed ? 'badge-completed' : (unlocked ? 'badge-current' : 'badge-locked');
     const badgeText = completed ? '✓ Concluído (100%)' : (unlocked ? '▶ Liberado' : '🔒 Bloqueado');
-    const btnText = completed ? 'Revisar Seções / Quiz' : (unlocked ? `Iniciar ${mod.code} (Modo Foco) →` : 'Conclua o módulo anterior');
+    const savedStep = (appState.activePillByModule && appState.activePillByModule[mod.id]) || 0;
+    const btnText = completed
+      ? 'Revisar Seções / Quiz'
+      : (unlocked ? (savedStep > 0 ? `Continuar ${mod.code} (Seção ${Math.min(savedStep + 1, 3)}) →` : `Iniciar ${mod.code} (Modo Foco) →`) : 'Conclua o módulo anterior');
 
     html += `
       <div class="lobby-module-card ${cardState}">
@@ -1212,8 +2768,9 @@ function navigateToView(viewId) {
   }
 
   appState.currentView = viewId;
+  appState.portalMode = 'course-focus';
   appState.inFocusMode = true; // Entra na Tela Exclusiva de Imersão sem distrações!
-  saveState();
+  saveState(true);
   renderAll();
   scrollToModuleTop();
 }
@@ -1228,8 +2785,9 @@ function selectModulePill(modId, pillIdx) {
   if (!appState.visitedPills[modId].includes(pillIdx)) {
     appState.visitedPills[modId].push(pillIdx);
   }
+  appState.portalMode = 'course-focus';
   appState.inFocusMode = true;
-  saveState();
+  saveState(false);
   renderFocusModeStage();
   scrollToModuleTop();
 }
@@ -1280,9 +2838,14 @@ function renderModuleFocusView(topbarEl, container, mod) {
 
   topbarEl.innerHTML = `
     <div class="focus-topbar-inner">
-      <button type="button" class="focus-exit-btn" onclick="exitFocusMode()">
-        ← Painel dos Módulos
-      </button>
+      <div style="display:flex; gap:0.5rem;">
+        <button type="button" class="focus-exit-btn" onclick="exitFocusMode()">
+          ← Módulos do Curso
+        </button>
+        <button type="button" class="focus-exit-btn" onclick="returnToPortalCatalog()" title="Salvar onde parou e voltar ao Portal Academia DNIZ">
+          ⏸️ Pausar e Continuar Depois
+        </button>
+      </div>
       <div class="focus-pills-nav" aria-label="Etapas do módulo atual">
         ${dotsHtml}
       </div>
@@ -1297,7 +2860,7 @@ function renderModuleFocusView(topbarEl, container, mod) {
     const currentPill = mod.pills[activeIdx];
     const prevBtn = activeIdx > 0
       ? `<button type="button" class="btn btn-outline" onclick="selectModulePill(${mod.id}, ${activeIdx - 1})">← Seção ${activeIdx}</button>`
-      : `<button type="button" class="btn btn-outline" onclick="exitFocusMode()">← Sair para o Painel</button>`;
+      : `<button type="button" class="btn btn-outline" onclick="exitFocusMode()">← Voltar aos Módulos</button>`;
     const nextBtn = activeIdx < 2
       ? `<button type="button" class="btn btn-primary" onclick="selectModulePill(${mod.id}, ${activeIdx + 1})">Avançar para Seção ${activeIdx + 2} →</button>`
       : `<button type="button" class="btn btn-primary" onclick="selectModulePill(${mod.id}, 3)">Ir para o 🧠 Quiz do ${mod.code} (Trava 3/3) →</button>`;
@@ -1654,7 +3217,7 @@ function submitModuleQuiz(event, modId) {
     if (!appState.completedModules.includes(modId)) {
       appState.completedModules.push(modId);
       appState.completedModules.sort((a, b) => a - b);
-      saveState();
+      saveState(true);
     }
     renderAll();
 
@@ -1683,7 +3246,7 @@ function submitModuleQuiz(event, modId) {
   } else {
     // ERROU QUALQUER QUESTÃO: ZERA O QUIZ E REDIRECIONA PARA O TOPO DO MÓDULO (SEÇÃO 1)
     appState.activePillByModule[modId] = 0; // Redireciona automaticamente para a Seção 1 (início do módulo)
-    saveState();
+    saveState(true);
     renderAll();
     scrollToModuleTop();
 
@@ -1919,7 +3482,7 @@ function submitFinalExam(event) {
     if (!appState.validationCode) {
       appState.validationCode = generateValidationCode(appState.employeeName);
     }
-    saveState();
+    saveState(true);
     renderAll();
 
     showModal({
@@ -1939,7 +3502,7 @@ function submitFinalExam(event) {
     });
   } else {
     appState.finalExamPassed = false;
-    saveState();
+    saveState(true);
     renderAll();
 
     showModal({
@@ -1959,20 +3522,33 @@ function submitFinalExam(event) {
 }
 
 // ============================================================================
-// CERTIFICADO DIGITAL DE CONCLUSÃO (MODO FOCO EXCLUSIVO)
+// CERTIFICADO DIGITAL DE CONCLUSÃO (MODO FOCO EXCLUSIVO + INSPEÇÃO DO GESTOR)
 // ============================================================================
 function renderCertificateFocusView(topbarEl, container) {
-  const pct = appState.finalExamScore ? Math.round((appState.finalExamScore / 10) * 100) : 100;
-  const empName = appState.employeeName || 'Empregado NAV Brasil';
-  const empId = appState.employeeId ? `Matrícula / Cargo: ${escapeHtml(appState.employeeId)}` : 'Lotação: DNB / Rádio Imperatriz (SBIZ)';
-  const dateStr = appState.completionDate || new Date().toLocaleDateString('pt-BR');
-  const codeStr = appState.validationCode || generateValidationCode(empName);
+  const targetUserId = appState.inspectingUserIdForCert || appState.currentUserId;
+  const targetUser = portalDB.users.find(u => u.id === targetUserId) || getCurrentUser();
+  const targetProg = targetUser ? getUserCourseProgress(targetUser.id, appState.activeCourseId) : null;
+
+  const scoreVal = targetProg && targetProg.finalExamScore !== null ? targetProg.finalExamScore : (appState.finalExamScore || 10);
+  const pct = Math.round((scoreVal / 10) * 100);
+  const empName = targetUser ? targetUser.name : (appState.employeeName || 'Empregado NAV Brasil');
+  const empId = targetUser
+    ? `Matrícula: ${escapeHtml(targetUser.matricula)} • Cargo: ${escapeHtml(targetUser.cargo)}`
+    : (appState.employeeId ? `Matrícula / Cargo: ${escapeHtml(appState.employeeId)}` : 'Lotação: DNB / Rádio Imperatriz (SBIZ)');
+  const dateStr = (targetProg && targetProg.completionDate) || appState.completionDate || new Date().toLocaleDateString('pt-BR');
+  const codeStr = (targetProg && targetProg.validationCode) || appState.validationCode || generateValidationCode(empName);
+  const totalSec = targetUser ? getTotalSecondsByUser(targetUser.id) : 0;
 
   topbarEl.innerHTML = `
     <div class="focus-topbar-inner">
-      <button type="button" class="focus-exit-btn" onclick="exitFocusMode()">
-        ← Painel dos Módulos
-      </button>
+      <div style="display:flex; gap:0.5rem;">
+        <button type="button" class="focus-exit-btn" onclick="returnToPortalCatalog()">
+          ← Voltar ao Portal Academia DNIZ
+        </button>
+        <button type="button" class="focus-exit-btn" onclick="exitFocusMode()">
+          📚 Módulos do Curso
+        </button>
+      </div>
       <div class="focus-pills-nav">
         <span class="focus-step-dot active">🎓 Certificado Digital de Conclusão</span>
       </div>
@@ -1984,8 +3560,8 @@ function renderCertificateFocusView(topbarEl, container) {
 
   container.innerHTML = `
     <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
-      <button type="button" class="btn btn-outline" onclick="navigateToView('final-exam')">
-        ← Voltar ao Gabarito Comentado
+      <button type="button" class="btn btn-outline" onclick="returnToPortalCatalog()">
+        ← Voltar ao Portal Academia DNIZ
       </button>
       <button type="button" class="btn btn-primary" onclick="window.print()">
         🖨️ Imprimir / Baixar Certificado em PDF
@@ -1996,7 +3572,7 @@ function renderCertificateFocusView(topbarEl, container) {
       <div class="cert-top-bar">
         <div class="cert-org">
           NAV BRASIL SERVIÇOS DE NAVEGAÇÃO AÉREA S.A.
-          <span>Dependência de Navegação Aérea de Imperatriz — DNB / Rádio Imperatriz (SBIZ / RDO-IZ)</span>
+          <span>Academia DNIZ • Dependência de Navegação Aérea de Imperatriz (SBIZ / RDO-IZ)</span>
           <span>Sistema de Gestão da Segurança da Aviação Civil contra Atos de Interferência Ilícita (SeMS • ICA 205-48)</span>
         </div>
         <div class="cert-badge-seal">
@@ -2013,7 +3589,7 @@ function renderCertificateFocusView(topbarEl, container) {
       <div style="font-size:0.85rem; color:var(--nav-muted); margin-bottom:1rem;">${empId}</div>
 
       <p style="font-size:0.91rem; color:#334155; max-width:780px; margin:0 auto;">
-        concluiu com aprovação integral os <strong>4 Módulos Sequenciais (100% de aproveitamento nos Quizzes de Módulo)</strong> e a <strong>Avaliação Final de Capacitação AVSEC</strong>, atendendo aos requisitos do Decreto nº 11.195/2022 (PNAVSEC), DCA 205-7, ICA 205-48 (SeMS), ICA 800-8, ICA 37-733, ICA 63-14, Defesa NBQR/BNQR, Cibersegurança, CIRCEA 100-56/2025 (Anexo G — ESAB) e PES-AVSEC SBIZ.
+        concluiu com aprovação integral os <strong>4 Módulos Sequenciais (100% de aproveitamento nos Quizzes de Módulo)</strong> e a <strong>Avaliação Final de Capacitação AVSEC</strong> na plataforma <strong>Academia DNIZ</strong>, atendendo aos requisitos do Decreto nº 11.195/2022 (PNAVSEC), DCA 205-7, ICA 205-48 (SeMS), ICA 800-8, ICA 37-733, ICA 63-14, Defesa NBQR/BNQR, Cibersegurança, CIRCEA 100-56/2025 (Anexo G — ESAB) e PES-AVSEC SBIZ.
       </p>
 
       <div class="cert-details-grid">
@@ -2027,15 +3603,19 @@ function renderCertificateFocusView(topbarEl, container) {
         </div>
         <div class="cert-detail-item">
           <span>Nota da Avaliação Final</span>
-          <strong>${appState.finalExamScore}/10 (${pct}% — Aprovado)</strong>
+          <strong>${scoreVal}/10 (${pct}% — Aprovado)</strong>
         </div>
         <div class="cert-detail-item">
           <span>Data de Conclusão</span>
           <strong>${dateStr}</strong>
         </div>
-        <div class="cert-detail-item" style="grid-column: span 2;">
+        <div class="cert-detail-item">
+          <span>Tempo Registrado no Perfil</span>
+          <strong>${formatDurationHM(totalSec)} (${formatDecimalHours(totalSec)})</strong>
+        </div>
+        <div class="cert-detail-item">
           <span>Código de Validação Digital</span>
-          <strong style="font-family: monospace; font-size:1rem; color:var(--nav-blue);">${codeStr}</strong>
+          <strong style="font-family: monospace; font-size:0.95rem; color:var(--nav-blue);">${codeStr}</strong>
         </div>
       </div>
 
@@ -2045,7 +3625,7 @@ function renderCertificateFocusView(topbarEl, container) {
           <span>Empregado(a) Concluinte — NAV Brasil</span>
         </div>
         <div class="sig-line">
-          Gestão Local AVSEC / SeMS — DNB-IZ
+          Gestão Local AVSEC / SeMS — Academia DNIZ
           <span>Rádio Imperatriz (SBIZ) • NAV Brasil</span>
         </div>
       </div>
@@ -2089,7 +3669,9 @@ function showModal({ type = 'warning', title, message, buttonText = 'OK', second
 
 function closeModal(triggerType) {
   const backdrop = document.getElementById('feedbackModal');
+  const cardEl = document.getElementById('modalCardContainer');
   if (backdrop) backdrop.classList.remove('open');
+  if (cardEl) cardEl.classList.remove('wide');
 
   if (triggerType === 'primary' && typeof currentModalCallbacks.onConfirm === 'function') {
     const fn = currentModalCallbacks.onConfirm;
@@ -2107,28 +3689,19 @@ function updateEmployeeInfo() {
   const idInput = document.getElementById('employeeIdInput');
   if (nameInput) appState.employeeName = nameInput.value;
   if (idInput) appState.employeeId = idInput.value;
-  saveState();
+  saveState(false);
   renderEmployeeBar();
 }
 
 function resetFullTraining() {
-  if (!confirm('Deseja reiniciar todo o treinamento AVSEC? Todo o progresso será zerado.')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  appState = {
-    employeeName: appState.employeeName,
-    employeeId: appState.employeeId,
-    inFocusMode: false,
-    currentView: 'module-1',
-    activePillByModule: { 1: 0, 2: 0, 3: 0, 4: 0 },
-    visitedPills: { 1: [0], 2: [0], 3: [0], 4: [0] },
-    completedModules: [],
-    finalExamPassed: false,
-    finalExamScore: null,
-    finalExamAnswers: {},
-    completionDate: null,
-    validationCode: null
-  };
-  saveState();
+  if (!confirm('Deseja reiniciar o progresso deste curso para o seu perfil?')) return;
+  if (appState.currentUserId) {
+    portalDB.progressByUser[appState.currentUserId] = {
+      [appState.activeCourseId]: createDefaultUserCourseProgress()
+    };
+    syncAppStateFromUserProgress(appState.currentUserId, appState.activeCourseId);
+  }
+  saveState(true);
   renderAll();
   scrollToModuleTop();
 }
@@ -2142,7 +3715,15 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+window.addEventListener('beforeunload', () => {
+  if (appState.currentUserId) {
+    updateCurrentAccessLogSnapshot();
+    saveState(false);
+  }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   renderAll();
+  pullDatabaseFromCloudSilent();
 });

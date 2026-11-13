@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Treinamento de Familiarização AVSEC — NAV Brasil (DNB / Rádio Imperatriz - SBIZ)</title>
+  <title>Academia DNIZ — Portal de Treinamentos NAV Brasil (DNB / Rádio Imperatriz - SBIZ)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,16 +12,137 @@
 <body>
 
   <!-- ========================================================================
-       VISÃO 1: PAINEL PRINCIPAL DA TRILHA (LOBBY DO CURSO)
-       Exibido apenas quando o aluno está escolhendo o módulo / vendo progresso
+       VISÃO 0: TELA DE LOGIN DO PORTAL ACADEMIA DNIZ (ACESSO POR PERFIL)
        ======================================================================== -->
-  <div id="lobbyView">
+  <div id="loginView" class="login-screen-wrapper">
+    <div class="login-card">
+      <div class="login-brand-header">
+        <div class="brand-emblem login-emblem">NAV<br>SBIZ</div>
+        <div>
+          <span class="login-unit-tag">NAV BRASIL • DNB / RÁDIO IMPERATRIZ (SBIZ)</span>
+          <h1>Academia DNIZ</h1>
+          <p>Portal Integrado de Capacitação, Controle de Horas e Certificação Operacional</p>
+        </div>
+      </div>
+
+      <form id="loginForm" class="login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label for="loginUsername">Matrícula ou Usuário de Acesso</label>
+          <input
+            type="text"
+            id="loginUsername"
+            class="portal-input"
+            placeholder="Ex: gestor ou sua matrícula..."
+            required
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Senha de Acesso</label>
+          <input
+            type="password"
+            id="loginPassword"
+            class="portal-input"
+            placeholder="Digite sua senha..."
+            required
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div id="loginErrorBox" class="login-error-box" style="display: none;"></div>
+
+        <button type="submit" class="btn btn-primary login-submit-btn">
+          🔐 Entrar na Academia DNIZ
+        </button>
+      </form>
+
+      <div class="login-QuickAccess-box">
+        <div class="quick-access-title">
+          <span>⚡ Acesso Rápido / Perfis Pré-Configurados (Clique para preencher):</span>
+          <span id="cloudStatusBadgeLogin" class="cloud-badge">💾 Banco Local + Nuvem</span>
+        </div>
+        <div id="loginQuickProfilesList" class="quick-profiles-grid">
+          <!-- Preenchido dinamicamente pelo app.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       VISÃO 1: PORTAL ACADEMIA DNIZ (CATÁLOGO DE CURSOS, HISTÓRICO E GESTOR)
+       ======================================================================== -->
+  <div id="portalDashboardView" style="display: none;">
     <header class="top-header">
       <div class="header-inner">
         <div class="brand-group">
-          <div class="brand-emblem" title="NAV Brasil - SBIZ">NAV<br>SBIZ</div>
+          <div class="brand-emblem" title="Academia DNIZ - SBIZ">NAV<br>SBIZ</div>
           <div class="brand-titles">
-            <h1>Treinamento de Familiarização AVSEC — NAV Brasil</h1>
+            <h1>Academia DNIZ — Portal de Capacitação Operacional</h1>
+            <div class="brand-subtitle">
+              <span>DNB / Rádio Imperatriz (SBIZ / RDO-IZ)</span>
+              <span class="badge-icao" id="portalCloudIndicator">💾 Sincronizado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cronômetro de Sessão e Carga Horária Acumulada -->
+        <div class="session-timer-pill" title="Tempo registrado automaticamente no seu histórico de acesso">
+          <div class="timer-dot"></div>
+          <div>
+            <span class="timer-label">TEMPO DESTE ACESSO</span>
+            <strong id="liveSessionTimer">00h 00m 00s</strong>
+          </div>
+          <div class="timer-divider"></div>
+          <div>
+            <span class="timer-label">TOTAL ACUMULADO</span>
+            <strong id="liveTotalUserTime">00h 00m</strong>
+          </div>
+        </div>
+
+        <!-- Perfil Logado + Botão Sair -->
+        <div class="user-pill">
+          <span id="portalUserRoleBadge" class="role-badge">Perfil</span>
+          <span>👤 <strong id="portalHeaderUserName">Usuário</strong></span>
+          <button type="button" onclick="handleLogout()" title="Salvar andamento, registrar tempo de acesso e sair">
+            Sair ↪
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Barra de Navegação do Portal -->
+    <nav class="portal-nav-bar no-print">
+      <div class="portal-nav-inner">
+        <button type="button" class="portal-tab-btn active" id="tabBtn-catalog" onclick="switchPortalTab('catalog')">
+          📚 Meus Cursos Disponíveis
+        </button>
+        <button type="button" class="portal-tab-btn" id="tabBtn-myhistory" onclick="switchPortalTab('myhistory')">
+          🕒 Meu Histórico de Acessos e Horas
+        </button>
+        <button type="button" class="portal-tab-btn" id="tabBtn-manager" onclick="switchPortalTab('manager')" style="display: none;">
+          🛡️ Painel do Gestor (Perfis, Relatórios e Cursos)
+        </button>
+      </div>
+    </nav>
+
+    <main class="lobby-container" id="portalMainContainer">
+      <!-- Renderizado dinamicamente via app.js -->
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       VISÃO 2: PAINEL INTERNO DO CURSO SELECIONADO (MÓDULOS E PROGRESSO)
+       ======================================================================== -->
+  <div id="lobbyView" style="display: none;">
+    <header class="top-header">
+      <div class="header-inner">
+        <div class="brand-group">
+          <button type="button" class="btn-back-portal" onclick="returnToPortalCatalog()">
+            ← Voltar ao Portal Academia DNIZ
+          </button>
+          <div class="brand-titles">
+            <h1 id="courseHeaderTitle">Treinamento de Familiarização AVSEC — NAV Brasil</h1>
             <div class="brand-subtitle">
               <span>DNB / Rádio Imperatriz (SBIZ / RDO-IZ)</span>
               <span class="badge-icao">VHF 125.65 MHz</span>
@@ -41,35 +162,23 @@
         </div>
 
         <div class="user-pill">
-          <span>👤 <strong id="headerUserName">Empregado não identificado</strong></span>
-          <button type="button" onclick="resetFullTraining()" title="Zerar todo o progresso do curso">Reiniciar</button>
+          <span>👤 <strong id="headerUserName">Colaborador</strong></span>
+          <button type="button" onclick="returnToPortalCatalog()" title="Pausar curso e continuar depois">
+            Salvar e Sair p/ Portal
+          </button>
         </div>
       </div>
     </header>
 
     <main class="lobby-container">
-      <!-- IDENTIFICAÇÃO DO TREINANDO -->
+      <!-- RESUMO DO ALUNO E BOTÃO DE CONTINUAR DE ONDE PAROU -->
       <section class="lobby-welcome-card">
         <div class="welcome-text">
-          <h2>Bem-vindo(a) à Trilha Interativa AVSEC (SBIZ)</h2>
-          <p>Identifique-se abaixo e clique no módulo liberado para entrar no <strong>Modo Foco (Tela Exclusiva de Estudo sem distrações)</strong>.</p>
+          <h2 id="courseWelcomeHeading">Trilha Interativa AVSEC (SBIZ)</h2>
+          <p id="courseResumeHint">Seu progresso e tempo de estudo são salvos automaticamente. Você pode pausar e continuar de onde parou a qualquer momento.</p>
         </div>
-        <div class="employee-form-group">
-          <input
-            type="text"
-            id="employeeNameInput"
-            class="employee-input"
-            placeholder="Nome completo do empregado (para Certificado)..."
-            oninput="updateEmployeeInfo()"
-          />
-          <input
-            type="text"
-            id="employeeIdInput"
-            class="employee-input"
-            style="min-width: 200px;"
-            placeholder="Matrícula / Função (ex: OEA)"
-            oninput="updateEmployeeInfo()"
-          />
+        <div class="course-quick-actions" id="courseResumeActionBox">
+          <!-- Botão "Continuar de onde parei" inserido via app.js -->
         </div>
       </section>
 
@@ -87,8 +196,8 @@
   </div>
 
   <!-- ========================================================================
-       VISÃO 2: TELA EXCLUSIVA DE IMERSÃO (MODO FOCO — SEM DISTRAÇÕES)
-       Ocupa 100% da tela quando o usuário entra em um Módulo, Pílula ou Quiz
+       VISÃO 3: TELA EXCLUSIVA DE IMERSÃO (MODO FOCO — SEM DISTRAÇÕES)
+       Ocupa 100% da tela quando o usuário entra em um Módulo, Seção ou Quiz
        ======================================================================== -->
   <div id="focusModeView" class="focus-mode-wrapper" style="display: none;">
     <!-- Barra superior minimalista de foco -->
@@ -96,15 +205,15 @@
       <!-- Renderizado dinamicamente via app.js -->
     </div>
 
-    <!-- Palco central exclusivo da Pílula / Quiz / Certificado -->
+    <!-- Palco central exclusivo da Seção / Quiz / Certificado -->
     <main class="focus-stage-container">
       <div id="focusStageContent" class="focus-card"></div>
     </main>
   </div>
 
-  <!-- MODAL POPUP DE FEEDBACK / REDIRECIONAMENTO -->
+  <!-- MODAL POPUP DE FEEDBACK / DETALHES DE HISTÓRICO -->
   <div class="modal-backdrop" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal-card">
+    <div class="modal-card" id="modalCardContainer">
       <div class="modal-header warning" id="modalHeader">
         <span class="modal-icon" id="modalIcon">⚠️</span>
         <h3 id="modalTitle" style="font-size:1.1rem; font-weight:800;">Aviso do Sistema</h3>
