@@ -1,6 +1,6 @@
 // ============================================================================
 // TREINAMENTO DE FAMILIARIZAÇÃO AVSEC — NAV BRASIL (DNB / RÁDIO IMPERATRIZ - SBIZ)
-// Plataforma LMS Interativa por Pílulas, Desafios de Bancada, Mito vs. Fato e Trava 3/3
+// Plataforma LMS Interativa por Seções, Desafios de Bancada, Mito vs. Fato e Trava 3/3
 // ============================================================================
 
 const STORAGE_KEY = 'navbrasil_avsec_sbiz_lms_interactive_v2';
@@ -21,8 +21,8 @@ const COURSE_MODULES = [
     pills: [
       {
         id: 'm1-p1',
-        tabLabel: '📌 Pílula 1: Safety vs. AVSEC',
-        title: '📌 PÍLULA 1: Safety vs. AVSEC (Você sabe a diferença?)',
+        tabLabel: '📌 Seção 1: Safety vs. AVSEC',
+        title: '📌 SEÇÃO 1: Safety vs. AVSEC (Você sabe a diferença?)',
         renderHtml: () => `
           <p style="font-size:0.96rem; margin-bottom:1rem;">
             Na aviação civil, a palavra <strong>"segurança"</strong> possui duas vertentes bem distintas que todo empregado da <strong>NAV Brasil</strong> precisa dominar. Clique nos cartões abaixo para destacar seus focos e, em seguida, resolva o <strong>Desafio Rápido de Bancada</strong>:
@@ -82,8 +82,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm1-p2',
-        tabLabel: '📌 Pílula 2: Guarda-Chuva Normativo',
-        title: '📌 PÍLULA 2: O Guarda-Chuva Normativo e a Responsabilidade de Todos',
+        tabLabel: '📌 Seção 2: Guarda-Chuva Normativo',
+        title: '📌 SEÇÃO 2: O Guarda-Chuva Normativo e a Responsabilidade de Todos',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             A segurança AVSEC no Brasil é regida por uma hierarquia rígida de regulamentos que garantem a soberania do espaço aéreo e a proteção do SISCEAB. <strong>Clique em cada degrau do Guarda-Chuva Normativo abaixo</strong> para inspecionar sua aplicação prática:
@@ -144,8 +144,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm1-p3',
-        tabLabel: '📌 Pílula 3: Os 4 Pilares do SeMS',
-        title: '📌 PÍLULA 3: Estrutura do SeMS (Os 4 Pilares Fundamentais)',
+        tabLabel: '📌 Seção 3: Os 4 Pilares do SeMS',
+        title: '📌 SEÇÃO 3: Estrutura do SeMS (Os 4 Pilares Fundamentais)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             O <strong>SeMS (Security Management System)</strong> é o sistema de gestão que integra a segurança ao dia a dia da NAV Brasil <span class="ref-citation">ICA-205-48, p. 16, 22</span>. <strong>Clique em cada um dos 4 Pilares abaixo</strong> para explorar sua função e a norma específica que o rege:
@@ -246,8 +246,8 @@ const COURSE_MODULES = [
     pills: [
       {
         id: 'm2-p1',
-        tabLabel: '📌 Pílula 1: As 3 Camadas de Defesa',
-        title: '📌 PÍLULA 1: As 3 Camadas de Defesa da DNB em Imperatriz (SBIZ / RDO-IZ)',
+        tabLabel: '📌 Seção 1: As 3 Camadas de Defesa',
+        title: '📌 SEÇÃO 1: As 3 Camadas de Defesa da DNB em Imperatriz (SBIZ / RDO-IZ)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             A proteção física da RDO-IZ adota o conceito de <strong>Defesa em Profundidade</strong>. <strong>Clique em cada uma das 3 Camadas abaixo</strong> para inspecionar os limites físicos e o nível de restrição na dependência de Imperatriz:
@@ -283,8 +283,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm2-p2',
-        tabLabel: '📌 Pílula 2: Credenciamento (ICA 63-14)',
-        title: '📌 PÍLULA 2: Normas de Credenciamento e Crachás de Acesso (ICA 63-14)',
+        tabLabel: '📌 Seção 2: Credenciamento (ICA 63-14)',
+        title: '📌 SEÇÃO 2: Normas de Credenciamento e Crachás de Acesso (ICA 63-14)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             A publicação do DECEA que disciplina os modelos, categorias e regras de credenciamento no âmbito do SISCEAB é a <strong>ICA 63-14</strong>, aplicada localmente pelo PES-AVSEC SBIZ e IT da dependência.
@@ -329,8 +329,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm2-p3',
-        tabLabel: '📌 Pílula 3: Desafio na ARS',
-        title: '📌 PÍLULA 3: Desafio a Pessoas Não Identificadas na ARS (Challenge)',
+        tabLabel: '📌 Seção 3: Desafio na ARS',
+        title: '📌 SEÇÃO 3: Desafio a Pessoas Não Identificadas na ARS (Challenge)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             Todo colaborador credenciado na 3ª Camada (ARS) possui o dever de aplicar o <strong>Procedimento de Desafio (Abordagem Cortês)</strong> ao avistar qualquer pessoa sem credencial visível. Resolva o simulador de bancada abaixo:
@@ -416,8 +416,8 @@ const COURSE_MODULES = [
     pills: [
       {
         id: 'm3-p1',
-        tabLabel: '📌 Pílula 1: Ameaças e Defesa NBQR/BNQR',
-        title: '📌 PÍLULA 1: Reconhecimento de Ameaças Físicas e Defesa NBQR / BNQR',
+        tabLabel: '📌 Seção 1: Ameaças e Defesa NBQR/BNQR',
+        title: '📌 SEÇÃO 1: Reconhecimento de Ameaças Físicas e Defesa NBQR / BNQR',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             Ameaças físicas incluem pacotes abandonados, sabotagem em cabos/energia e artefatos contendo agentes <strong>NBQR / BNQR (Biológico, Nuclear, Químico e Radiológico)</strong>. Clique nos botões do protocolo abaixo para inspecionar a conduta correta:
@@ -458,8 +458,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm3-p2',
-        tabLabel: '📌 Pílula 2: Cibersegurança (ICA 205-48)',
-        title: '📌 PÍLULA 2: Proteção de Sistemas Críticos e Cibersegurança (ICA 205-48, Item 8.2)',
+        tabLabel: '📌 Seção 2: Cibersegurança (ICA 205-48)',
+        title: '📌 SEÇÃO 2: Proteção de Sistemas Críticos e Cibersegurança (ICA 205-48, Item 8.2)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             Conforme o <strong>Item 8.2 da ICA 205-48</strong>, os consoles operacionais AFIS, servidores de gravação, enlaces de dados e redes do SISCEAB são <strong>Sistemas Críticos de Missão</strong>. Teste sua reação no Desafio de Bancada Cibernético abaixo:
@@ -492,8 +492,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm3-p3',
-        tabLabel: '📌 Pílula 3: Riscos de Drones / UAS',
-        title: '📌 PÍLULA 3: Operação Não Autorizada de Drones / UAS em SBIZ',
+        tabLabel: '📌 Seção 3: Riscos de Drones / UAS',
+        title: '📌 SEÇÃO 3: Operação Não Autorizada de Drones / UAS em SBIZ',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             A presença de <strong>Drones / UAS (Aeronaves Remotamente Pilotadas)</strong> sem autorização SARPAS/DECEA na zona de aproximação de Imperatriz (SBIZ) ou sobre as antenas da RDO-IZ é uma ocorrência grave que exige pronta resposta.
@@ -581,14 +581,14 @@ const COURSE_MODULES = [
     code: 'MÓDULO 4',
     shortTitle: 'Contingência: ESAB, Evacuação e Reassunção',
     title: 'MÓDULO 4: Procedimentos de Contingência (ESAB, Evacuação e Reassunção)',
-    subtitle: 'Pratique o Anexo G da CIRCEA 100-56/2025 (ESAB), a cadeia de acionamento (VHF 125.65 MHz, ACC-AZ TF-2, CGNA, APOC, PF), Evacuação ao PES e RELSEC no SGAVSEC em 24h.',
+    subtitle: 'Pratique o Anexo G da CIRCEA 100-56/2025 (ESAB), a cadeia de acionamento (VHF 125.65 MHz, ACC-AZ TF-2, CGNA, APOC, PF), Evacuação ao PE (Ponto de Encontro) e RELSEC no SGAVSEC em 24h.',
     duration: '30 min',
-    normas: ['CIRCEA 100-56/2025 (Anexo G)', 'VHF 125.65 MHz / TF-2', 'PES & Reassunção', 'RELSEC SGAVSEC (24h)'],
+    normas: ['CIRCEA 100-56/2025 (Anexo G)', 'VHF 125.65 MHz / TF-2', 'PE & Reassunção', 'RELSEC SGAVSEC (24h)'],
     pills: [
       {
         id: 'm4-p1',
-        tabLabel: '📌 Pílula 1: ESAB (Anexo G) e Acionamentos',
-        title: '📌 PÍLULA 1: ESAB (Anexo G da CIRCEA 100-56/2025) e Cadeia de Acionamento',
+        tabLabel: '📌 Seção 1: ESAB (Anexo G) e Acionamentos',
+        title: '📌 SEÇÃO 1: ESAB (Anexo G da CIRCEA 100-56/2025) e Cadeia de Acionamento',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             No recebimento de uma ameaça de bomba (real ou em <strong>Exercício Simulado de Ameaça de Bomba — ESAB</strong>), o operador utiliza imediatamente o <strong>Questionário Padrão do Anexo G da CIRCEA 100-56/2025</strong> e executa o protocolo de comunicações da RDO-IZ. <strong>Clique em cada passo da cadeia operacional abaixo:</strong>
@@ -629,8 +629,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm4-p2',
-        tabLabel: '📌 Pílula 2: Evacuação e PES (Headcount)',
-        title: '📌 PÍLULA 2: Evacuação AVSEC vs. Evacuação SMS/SGSO e Ponto de Encontro Seguro (PES)',
+        tabLabel: '📌 Seção 2: Evacuação e PE (Headcount)',
+        title: '📌 SEÇÃO 2: Evacuação AVSEC vs. Evacuação SMS/SGSO e Ponto de Encontro (PE)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             Você sabia que uma evacuação por <strong>Ameaça de Bomba (AVSEC)</strong> possui diferenças importantes em relação a uma evacuação por <strong>Incêndio (SMS/SGSO)</strong>? Compare abaixo:
@@ -643,7 +643,7 @@ const COURSE_MODULES = [
               <ul style="padding-left:1.2rem; font-size:0.88rem; color:#334155;">
                 <li>Observação visual rápida do próprio posto de trabalho (sem tocar em objetos suspeitos);</li>
                 <li>Cada colaborador leva consigo sua mochila/bolsa pessoal (reduz falsos alarmes durante a varredura antibombas da PF);</li>
-                <li>Deslocamento seguro ao <strong>Ponto de Encontro Seguro (PES)</strong> e realização obrigatória da <strong>contagem nominal (<em>headcount</em>)</strong>.</li>
+                <li>Deslocamento seguro ao <strong>Ponto de Encontro (PE)</strong> e realização obrigatória da <strong>contagem nominal (<em>headcount</em>)</strong>.</li>
               </ul>
             </div>
 
@@ -653,7 +653,7 @@ const COURSE_MODULES = [
               <ul style="padding-left:1.2rem; font-size:0.88rem; color:#334155;">
                 <li>Saída imediata sem recolher pertences pessoais;</li>
                 <li>Fechamento de portas corta-fogo (sem trancar) para abafar o foco de incêndio;</li>
-                <li>Reunião no ponto externo e contagem nominal (<em>headcount</em>) para o Corpo de Bombeiros.</li>
+                <li>Reunião no <strong>Ponto de Encontro (PE)</strong> externo e contagem nominal (<em>headcount</em>) para o Corpo de Bombeiros.</li>
               </ul>
             </div>
           </div>
@@ -661,8 +661,8 @@ const COURSE_MODULES = [
       },
       {
         id: 'm4-p3',
-        tabLabel: '📌 Pílula 3: Reassunção e RELSEC (24h)',
-        title: '📌 PÍLULA 3: Reassunção do Serviço ("Área Segura") e RELSEC no SGAVSEC (Até 24h)',
+        tabLabel: '📌 Seção 3: Reassunção e RELSEC (24h)',
+        title: '📌 SEÇÃO 3: Reassunção do Serviço ("Área Segura") e RELSEC no SGAVSEC (Até 24h)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
             Após uma evacuação AVSEC, o retorno à Sala AFIS e Sala Técnica obedece a um rito rigoroso. Resolva o Desafio Rápido de Bancada abaixo:
@@ -674,7 +674,7 @@ const COURSE_MODULES = [
               <span style="font-size:0.8rem; color:#FDE68A;">Valide o protocolo de retorno à operação normal</span>
             </div>
             <div class="workbench-scenario">
-              <strong>Cenário:</strong> A equipe da RDO-IZ está reunida no Ponto de Encontro Seguro (PES) após uma evacuação por ameaça de bomba. Passaram-se 20 minutos e aparentemente não houve explosão.<br>
+              <strong>Cenário:</strong> A equipe da RDO-IZ está reunida no <strong>Ponto de Encontro (PE)</strong> após uma evacuação por ameaça de bomba. Passaram-se 20 minutos e aparentemente não houve explosão.<br>
               ❓ <strong>Quando a equipe pode reentrar na instalação para reassumir o serviço e qual o prazo do RELSEC no portal SGAVSEC?</strong>
             </div>
 
@@ -754,7 +754,7 @@ const NORMATIVE_TREE_DATA = [
   },
   {
     title: '📡 PES-AVSEC SBIZ / MOp RDO-IZ ──► Execução Prática na DNB',
-    desc: 'Materializa as normas superiores na rotina operacional de <strong>Imperatriz (SBIZ / RDO-IZ)</strong>: define as 3 Camadas de Defesa locais, regras de acesso à Sala AFIS e Sala Técnica, protocolos ESAB, rotas para o Ponto de Encontro Seguro (PES) e acionamentos via VHF 125.65 MHz e TF-2.',
+    desc: 'Materializa as normas superiores na rotina operacional de <strong>Imperatriz (SBIZ / RDO-IZ)</strong>: define as 3 Camadas de Defesa locais, regras de acesso à Sala AFIS e Sala Técnica, protocolos ESAB, rotas para o Ponto de Encontro (PE) e acionamentos via VHF 125.65 MHz e TF-2.',
     refs: ['PES-AVSEC_2026_01', 'MOp RDO-IZ']
   }
 ];
@@ -943,16 +943,16 @@ const FINAL_EXAM_QUESTIONS = [
   },
   {
     id: 'fq9',
-    tema: 'Evacuação AVSEC e Ponto de Encontro Seguro (PES)',
-    question: '9. [Evacuação e PES] Durante uma evacuação da dependência DNB-IZ por ameaça de bomba (Evacuação AVSEC), para onde a equipe deve se deslocar e qual procedimento de controle de efetivo é obrigatório?',
+    tema: 'Evacuação AVSEC e Ponto de Encontro (PE)',
+    question: '9. [Evacuação e PE] Durante uma evacuação da dependência DNB-IZ por ameaça de bomba (Evacuação AVSEC), para onde a equipe deve se deslocar e qual procedimento de controle de efetivo é obrigatório?',
     options: [
-      'Deslocar-se para o Ponto de Encontro Seguro (PES) e realizar a contagem nominal (headcount) de todos os empregados, terceirizados e visitantes.',
+      'Deslocar-se para o Ponto de Encontro (PE) e realizar a contagem nominal (headcount) de todos os empregados, terceirizados e visitantes.',
       'Permanecer dentro da Sala Técnica com as luzes apagadas.',
       'Ir diretamente para casa sem passar pelo ponto de encontro.',
       'Aguardar na calçada colado às janelas de vidro da Sala AFIS.'
     ],
     correctIndex: 0,
-    comment: 'Na evacuação, todos os ocupantes deslocam-se pelas rotas seguras até o Ponto de Encontro Seguro (PES), onde é executada obrigatoriamente a contagem nominal (headcount).'
+    comment: 'Na evacuação, todos os ocupantes deslocam-se pelas rotas seguras até o Ponto de Encontro (PE), onde é executada obrigatoriamente a contagem nominal (headcount).'
   },
   {
     id: 'fq10',
@@ -1098,7 +1098,7 @@ function renderLobbyGrid() {
     const cardState = completed ? 'completed' : (unlocked ? 'unlocked' : 'locked');
     const badgeClass = completed ? 'badge-completed' : (unlocked ? 'badge-current' : 'badge-locked');
     const badgeText = completed ? '✓ Concluído (100%)' : (unlocked ? '▶ Liberado' : '🔒 Bloqueado');
-    const btnText = completed ? 'Revisar Pílulas / Quiz' : (unlocked ? `Iniciar ${mod.code} (Modo Foco) →` : 'Conclua o módulo anterior');
+    const btnText = completed ? 'Revisar Seções / Quiz' : (unlocked ? `Iniciar ${mod.code} (Modo Foco) →` : 'Conclua o módulo anterior');
 
     html += `
       <div class="lobby-module-card ${cardState}">
@@ -1235,7 +1235,7 @@ function selectModulePill(modId, pillIdx) {
 }
 
 // ============================================================================
-// RENDERIZAÇÃO DO MODO FOCO (TELA EXCLUSIVA PARA A PÍLULA OU QUIZ)
+// RENDERIZAÇÃO DO MODO FOCO (TELA EXCLUSIVA PARA A SEÇÃO OU QUIZ)
 // ============================================================================
 function renderFocusModeStage() {
   const topbarEl = document.getElementById('focusTopbar');
@@ -1260,9 +1260,9 @@ function renderModuleFocusView(topbarEl, container, mod) {
 
   // Barra superior minimalista do Modo Foco
   const dotsHtml = [
-    { label: 'Pílula 1', idx: 0 },
-    { label: 'Pílula 2', idx: 1 },
-    { label: 'Pílula 3', idx: 2 },
+    { label: 'Seção 1', idx: 0 },
+    { label: 'Seção 2', idx: 1 },
+    { label: 'Seção 3', idx: 2 },
     { label: '🧠 Quiz (3/3)', idx: 3 }
   ].map(item => {
     const isCurrent = activeIdx === item.idx;
@@ -1292,14 +1292,14 @@ function renderModuleFocusView(topbarEl, container, mod) {
     </div>
   `;
 
-  // Conteúdo exclusivo apenas da Pílula ativa ou do Quiz
+  // Conteúdo exclusivo apenas da Seção ativa ou do Quiz
   if (activeIdx < 3) {
     const currentPill = mod.pills[activeIdx];
     const prevBtn = activeIdx > 0
-      ? `<button type="button" class="btn btn-outline" onclick="selectModulePill(${mod.id}, ${activeIdx - 1})">← Pílula ${activeIdx}</button>`
+      ? `<button type="button" class="btn btn-outline" onclick="selectModulePill(${mod.id}, ${activeIdx - 1})">← Seção ${activeIdx}</button>`
       : `<button type="button" class="btn btn-outline" onclick="exitFocusMode()">← Sair para o Painel</button>`;
     const nextBtn = activeIdx < 2
-      ? `<button type="button" class="btn btn-primary" onclick="selectModulePill(${mod.id}, ${activeIdx + 1})">Avançar para Pílula ${activeIdx + 2} →</button>`
+      ? `<button type="button" class="btn btn-primary" onclick="selectModulePill(${mod.id}, ${activeIdx + 1})">Avançar para Seção ${activeIdx + 2} →</button>`
       : `<button type="button" class="btn btn-primary" onclick="selectModulePill(${mod.id}, 3)">Ir para o 🧠 Quiz do ${mod.code} (Trava 3/3) →</button>`;
 
     container.innerHTML = `
@@ -1310,7 +1310,7 @@ function renderModuleFocusView(topbarEl, container, mod) {
           </span>
           <h3>${currentPill.title}</h3>
         </div>
-        <span class="status-badge badge-current">Pílula ${activeIdx + 1} de 3</span>
+        <span class="status-badge badge-current">Seção ${activeIdx + 1} de 3</span>
       </div>
 
       ${currentPill.renderHtml()}
@@ -1387,7 +1387,7 @@ function renderModuleFocusView(topbarEl, container, mod) {
       </div>
 
       <div class="quiz-rule-banner">
-        ⚠️ <strong>Regra do Treinamento:</strong> Para avançar ao próximo módulo, você deve acertar <strong>todas as 3 questões (100% de aproveitamento)</strong>. Caso erre qualquer resposta, o sistema acionará um alerta, zerará o quiz e redirecionará automaticamente para a <strong>Pílula 1 do ${mod.code}</strong>.
+        ⚠️ <strong>Regra do Treinamento:</strong> Para avançar ao próximo módulo, você deve acertar <strong>todas as 3 questões (100% de aproveitamento)</strong>. Caso erre qualquer resposta, o sistema acionará um alerta, zerará o quiz e redirecionará automaticamente para a <strong>Seção 1 do ${mod.code}</strong>.
       </div>
 
       <form id="moduleQuizForm-${mod.id}" onsubmit="submitModuleQuiz(event, ${mod.id})">
@@ -1395,7 +1395,7 @@ function renderModuleFocusView(topbarEl, container, mod) {
 
         <div class="pill-footer-nav">
           <button type="button" class="btn btn-outline" onclick="selectModulePill(${mod.id}, 2)">
-            ← Voltar para a Pílula 3
+            ← Voltar para a Seção 3
           </button>
           <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
             ${isCompleted ? `
@@ -1681,8 +1681,8 @@ function submitModuleQuiz(event, modId) {
       }
     });
   } else {
-    // ERROU QUALQUER QUESTÃO: ZERA O QUIZ E REDIRECIONA PARA O TOPO DO MÓDULO (PÍLULA 1)
-    appState.activePillByModule[modId] = 0; // Redireciona automaticamente para a Pílula 1 (início do módulo)
+    // ERROU QUALQUER QUESTÃO: ZERA O QUIZ E REDIRECIONA PARA O TOPO DO MÓDULO (SEÇÃO 1)
+    appState.activePillByModule[modId] = 0; // Redireciona automaticamente para a Seção 1 (início do módulo)
     saveState();
     renderAll();
     scrollToModuleTop();
@@ -1692,9 +1692,9 @@ function submitModuleQuiz(event, modId) {
       title: `Trava 3/3 Acionada: Você acertou ${correctCount} de 3 questões`,
       message: `
         <p>⚠️ <strong>Regra de Eliminação do Treinamento:</strong> Para avançar ao próximo módulo, é obrigatório acertar <strong>todas as 3 questões (100% de aproveitamento)</strong>.</p>
-        <p>Suas respostas do quiz foram <strong>zeradas</strong> e você foi <strong>redirecionado automaticamente para o início do ${mod.code} (📌 Pílula 1)</strong> para releitura das pílulas antes de tentar novamente.</p>
+        <p>Suas respostas do quiz foram <strong>zeradas</strong> e você foi <strong>redirecionado automaticamente para o início do ${mod.code} (📌 Seção 1)</strong> para releitura das seções antes de tentar novamente.</p>
       `,
-      buttonText: `Reler ${mod.code} desde a Pílula 1`,
+      buttonText: `Reler ${mod.code} desde a Seção 1`,
       onConfirm: () => {
         scrollToModuleTop();
       }
