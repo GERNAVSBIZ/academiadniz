@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Treinamento de Familiarização AVSEC — NAV Brasil (DNB / Rádio Imperatriz - SBIZ)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ========================================================================
+       VISÃO 1: PAINEL PRINCIPAL DA TRILHA (LOBBY DO CURSO)
+       Exibido apenas quando o aluno está escolhendo o módulo / vendo progresso
+       ======================================================================== -->
+  <div id="lobbyView">
+    <header class="top-header">
+      <div class="header-inner">
+        <div class="brand-group">
+          <div class="brand-emblem" title="NAV Brasil - SBIZ">NAV<br>SBIZ</div>
+          <div class="brand-titles">
+            <h1>Treinamento de Familiarização AVSEC — NAV Brasil</h1>
+            <div class="brand-subtitle">
+              <span>DNB / Rádio Imperatriz (SBIZ / RDO-IZ)</span>
+              <span class="badge-icao">VHF 125.65 MHz</span>
+              <span class="badge-icao">SeMS • ICA 205-48</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-progress-box" aria-label="Progresso geral do treinamento">
+          <div class="progress-meta">
+            <span id="globalProgressStatus">0 de 4 Módulos Concluídos</span>
+            <span class="progress-percent" id="globalProgressText">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="globalProgressFill"></div>
+          </div>
+        </div>
+
+        <div class="user-pill">
+          <span>👤 <strong id="headerUserName">Empregado não identificado</strong></span>
+          <button type="button" onclick="resetFullTraining()" title="Zerar todo o progresso do curso">Reiniciar</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="lobby-container">
+      <!-- IDENTIFICAÇÃO DO TREINANDO -->
+      <section class="lobby-welcome-card">
+        <div class="welcome-text">
+          <h2>Bem-vindo(a) à Trilha Interativa AVSEC (SBIZ)</h2>
+          <p>Identifique-se abaixo e clique no módulo liberado para entrar no <strong>Modo Foco (Tela Exclusiva de Estudo sem distrações)</strong>.</p>
+        </div>
+        <div class="employee-form-group">
+          <input
+            type="text"
+            id="employeeNameInput"
+            class="employee-input"
+            placeholder="Nome completo do empregado (para Certificado)..."
+            oninput="updateEmployeeInfo()"
+          />
+          <input
+            type="text"
+            id="employeeIdInput"
+            class="employee-input"
+            style="min-width: 200px;"
+            placeholder="Matrícula / Função (ex: OEA)"
+            oninput="updateEmployeeInfo()"
+          />
+        </div>
+      </section>
+
+      <!-- GRADE DE MÓDULOS SEQUENCIAIS -->
+      <section class="lobby-modules-section">
+        <div class="lobby-section-header">
+          <h3>📚 Módulos Sequenciais e Certificação</h3>
+          <span class="lobby-rule-badge">🔒 Trava Obrigatória: 100% (3/3) nos Quizzes de Módulo • 80% (8/10) na Avaliação Final</span>
+        </div>
+        <div class="lobby-grid" id="lobbyModulesGrid">
+          <!-- Renderizado dinamicamente via app.js -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       VISÃO 2: TELA EXCLUSIVA DE IMERSÃO (MODO FOCO — SEM DISTRAÇÕES)
+       Ocupa 100% da tela quando o usuário entra em um Módulo, Pílula ou Quiz
+       ======================================================================== -->
+  <div id="focusModeView" class="focus-mode-wrapper" style="display: none;">
+    <!-- Barra superior minimalista de foco -->
+    <div class="focus-topbar no-print" id="focusTopbar">
+      <!-- Renderizado dinamicamente via app.js -->
+    </div>
+
+    <!-- Palco central exclusivo da Pílula / Quiz / Certificado -->
+    <main class="focus-stage-container">
+      <div id="focusStageContent" class="focus-card"></div>
+    </main>
+  </div>
+
+  <!-- MODAL POPUP DE FEEDBACK / REDIRECIONAMENTO -->
+  <div class="modal-backdrop" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header warning" id="modalHeader">
+        <span class="modal-icon" id="modalIcon">⚠️</span>
+        <h3 id="modalTitle" style="font-size:1.1rem; font-weight:800;">Aviso do Sistema</h3>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline"
+          id="modalSecondaryBtn"
+          style="display:none;"
+          onclick="closeModal('secondary')"
+        >
+          Secundário
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="modalPrimaryBtn"
+          onclick="closeModal('primary')"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
