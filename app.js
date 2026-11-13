@@ -1677,13 +1677,10 @@ function renderPortalDashboard() {
 }
 
 function renderCatalogTabHtml(user) {
-  const assignedIds = Array.isArray(user.assignedCourses) && user.assignedCourses.length
-    ? user.assignedCourses
-    : ['avsec-sbiz'];
+  const assignedIds = Array.isArray(user.assignedCourses) ? user.assignedCourses : [];
+  const visibleCourses = portalDB.courses.filter(c => assignedIds.includes(c.id));
 
-  const visibleCourses = portalDB.courses.filter(c => assignedIds.includes(c.id) || user.role === 'gestor');
-
-  const cardsHtml = visibleCourses.map(course => {
+  const cardsHtml = visibleCourses.length ? visibleCourses.map(course => {
     const prog = getUserCourseProgress(user.id, course.id);
     const pct = calculateUserCoursePercent(user.id, course.id);
     const resumeText = getReadableResumePoint(user.id, course.id);
@@ -1745,7 +1742,15 @@ function renderCatalogTabHtml(user) {
         </div>
       </div>
     `;
-  }).join('');
+  }).join('') : `
+    <div class="portal-panel-card" style="grid-column: 1 / -1; text-align:center; padding:2.25rem;">
+      <div style="font-size:2.2rem; margin-bottom:0.5rem;">🔒</div>
+      <h4 style="color:var(--nav-navy); font-size:1.1rem; margin-bottom:0.4rem;">Nenhum Curso Atribuído ao Seu Perfil no Momento</h4>
+      <p style="font-size:0.88rem; color:var(--nav-muted); max-width:560px; margin:0 auto;">
+        Os cursos da Academia DNIZ são atribuídos individualmente pelo <strong>Gestor da Unidade</strong> conforme a função operacional de cada colaborador. Solicite ao Gestor a liberação dos treinamentos aplicáveis ao seu perfil.
+      </p>
+    </div>
+  `;
 
   const totalSec = getTotalSecondsByUser(user.id);
   const myAccessCount = portalDB.accessLogs.filter(l => l.userId === user.id).length;
@@ -1759,9 +1764,9 @@ function renderCatalogTabHtml(user) {
         <small>Matrícula: ${escapeHtml(user.matricula)} • ${escapeHtml(user.cargo)}</small>
       </div>
       <div class="kpi-card success">
-        <span>Cursos Concluídos</span>
+        <span>Cursos Atribuídos / Concluídos</span>
         <strong>${completedCount} / ${visibleCourses.length}</strong>
-        <small>Certificados digitais habilitados</small>
+        <small>${visibleCourses.length} curso(s) liberado(s) pelo Gestor</small>
       </div>
       <div class="kpi-card warning">
         <span>Quantidade de Acessos</span>
@@ -1777,7 +1782,7 @@ function renderCatalogTabHtml(user) {
 
     <section class="lobby-modules-section">
       <div class="lobby-section-header">
-        <h3>📚 Cursos Disponíveis para o Seu Perfil (${visibleCourses.length})</h3>
+        <h3>📚 Cursos Atribuídos ao Seu Perfil pelo Gestor (${visibleCourses.length})</h3>
         <span class="lobby-rule-badge">💾 Você pode entrar, avançar nas seções e pausar para finalizar depois a qualquer momento</span>
       </div>
       <div class="lobby-grid">
@@ -1940,32 +1945,44 @@ function renderManagerTabHtml() {
 
 function renderManagerReportsSubtab() {
   const rowsHtml = portalDB.users.map(u => {
+    const assignedIds = Array.isArray(u.assignedCourses) ? u.assignedCourses : [];
+    const isAvsecAssigned = assignedIds.includes('avsec-sbiz');
     const prog = getUserCourseProgress(u.id, 'avsec-sbiz');
     const pct = calculateUserCoursePercent(u.id, 'avsec-sbiz');
     const userLogs = portalDB.accessLogs.filter(l => l.userId === u.id);
     const totalSec = getTotalSecondsByUser(u.id);
     const avgSec = userLogs.length ? Math.round(totalSec / userLogs.length) : 0;
-    const resumePoint = getReadableResumePoint(u.id, 'avsec-sbiz');
+    const resumePoint = isAvsecAssigned ? getReadableResumePoint(u.id, 'avsec-sbiz') : 'Curso não atribuído a este operador';
 
     let statusBadge = `<span class="status-badge badge-locked">⚪ Não Iniciou</span>`;
-    if (prog.finalExamPassed) {
+    if (!isAvsecAssigned) {
+      statusBadge = `<span class="status-badge" style="background:#F1F5F9; color:#64748B; border:1px solid #CBD5E1;">🚫 Não Atribuído</span>`;
+    } else if (prog.finalExamPassed) {
       statusBadge = `<span class="status-badge badge-completed">🟢 Finalizou (${prog.finalExamScore}/10)</span>`;
     } else if (prog.status === 'in_progress' || pct > 0 || prog.startedAt) {
       statusBadge = `<span class="status-badge badge-current">🟡 Iniciou (${pct}%)</span>`;
     }
+
+    const assignedBadges = assignedIds.length
+      ? portalDB.courses
+          .filter(c => assignedIds.includes(c.id))
+          .map(c => `<span style="display:inline-block; background:#DBEAFE; color:#1E40AF; font-size:0.7rem; font-weight:700; padding:0.12rem 0.45rem; border-radius:5px; margin:0.1rem 0.2rem 0 0;">📌 ${escapeHtml(c.code)}</span>`)
+          .join('')
+      : `<span style="font-size:0.72rem; color:#B91C1C; font-weight:700;">Nenhum curso atribuído</span>`;
 
     return `
       <tr>
         <td>
           <strong>${escapeHtml(u.name)}</strong>
           <div style="font-size:0.75rem; color:var(--nav-muted);">Matrícula: ${escapeHtml(u.matricula)} • Login: <code>${escapeHtml(u.username)}</code></div>
-          <div style="font-size:0.74rem; color:var(--nav-blue); font-weight:600;">${escapeHtml(u.cargo)}</div>
+          <div style="font-size:0.74rem; color:var(--nav-blue); font-weight:600; margin-bottom:0.2rem;">${escapeHtml(u.cargo)}</div>
+          <div>${assignedBadges}</div>
         </td>
         <td>${statusBadge}</td>
         <td>
           <div style="font-size:0.8rem; font-weight:700; color:var(--nav-navy);">${escapeHtml(resumePoint)}</div>
           <div class="progress-track" style="width:140px; margin-top:0.3rem;">
-            <div class="progress-fill" style="width:${pct}%;"></div>
+            <div class="progress-fill" style="width:${isAvsecAssigned ? pct : 0}%;"></div>
           </div>
         </td>
         <td>
@@ -1978,6 +1995,9 @@ function renderManagerReportsSubtab() {
         </td>
         <td>
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="openAssignCoursesToUserModal('${u.id}')" title="Escolher quais cursos ficam disponíveis para este operador">
+              📌 Atribuir Cursos (${assignedIds.length})
+            </button>
             <button type="button" class="btn btn-outline btn-sm" onclick="openUserAccessHistoryModal('${u.id}')">
               🕒 Horas por Acesso (${userLogs.length})
             </button>
@@ -1999,9 +2019,9 @@ function renderManagerReportsSubtab() {
     <div class="portal-panel-card">
       <div class="portal-panel-header">
         <div>
-          <h3>📊 Relatório Gerencial de Andamento, Status e Horas por Perfil</h3>
+          <h3>📊 Relatório Gerencial de Andamento, Cursos Atribuídos e Horas por Perfil</h3>
           <p style="font-size:0.84rem; color:var(--nav-muted);">
-            Acompanhe quem ainda não iniciou, quem está em andamento (e onde parou) e quem já finalizou com emissão de certificado.
+            Acompanhe os cursos atribuídos a cada operador, quem ainda não iniciou, quem está em andamento (e onde parou) e quem já finalizou.
           </p>
         </div>
         <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
@@ -2018,7 +2038,7 @@ function renderManagerReportsSubtab() {
         <table class="portal-table">
           <thead>
             <tr>
-              <th>Colaborador / Perfil</th>
+              <th>Colaborador / Cursos Atribuídos</th>
               <th>Status no Curso</th>
               <th>Progresso / Onde Parou</th>
               <th>Qtd. Acessos</th>
@@ -2092,31 +2112,50 @@ function openUserAccessHistoryModal(userId) {
 }
 
 function renderManagerUsersSubtab() {
-  const userRows = portalDB.users.map(u => `
-    <tr>
-      <td><strong>${escapeHtml(u.name)}</strong></td>
-      <td><code>${escapeHtml(u.username)}</code></td>
-      <td><code>${escapeHtml(u.password)}</code></td>
-      <td>${escapeHtml(u.matricula)}</td>
-      <td>${escapeHtml(u.cargo)}</td>
-      <td><span class="role-badge ${u.role === 'gestor' ? 'gestor' : 'colaborador'}">${u.role === 'gestor' ? 'Gestor' : 'Colaborador'}</span></td>
-      <td>
-        <div style="display:flex; gap:0.4rem;">
-          <button type="button" class="btn btn-outline btn-sm" onclick="populateUserFormForEdit('${u.id}')">✏️ Editar</button>
-          ${u.id !== appState.currentUserId ? `
-            <button type="button" class="btn btn-outline btn-sm" style="color:#B91C1C; border-color:#FCA5A5;" onclick="deleteUserProfile('${u.id}')">🗑️ Excluir</button>
-          ` : ''}
-        </div>
-      </td>
-    </tr>
+  const courseCheckboxesHtml = portalDB.courses.map(c => `
+    <label style="display:flex; align-items:center; gap:0.6rem; background:#F8FAFC; border:1.5px solid #CBD5E1; padding:0.6rem 0.85rem; border-radius:9px; cursor:pointer; font-size:0.86rem;">
+      <input type="checkbox" name="mgrUserAssignedCourse" value="${escapeHtml(c.id)}" checked style="transform:scale(1.15); accent-color:var(--nav-blue);" />
+      <span><strong>${escapeHtml(c.code)}</strong> — ${escapeHtml(c.title)} (${c.workloadHours}h)</span>
+    </label>
   `).join('');
+
+  const userRows = portalDB.users.map(u => {
+    const assignedIds = Array.isArray(u.assignedCourses) ? u.assignedCourses : [];
+    const courseTags = assignedIds.length
+      ? portalDB.courses
+          .filter(c => assignedIds.includes(c.id))
+          .map(c => `<span style="display:inline-block; background:#DBEAFE; color:#1E40AF; font-size:0.72rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:5px; margin:0.1rem 0.25rem 0.1rem 0;">📌 ${escapeHtml(c.code)}</span>`)
+          .join('')
+      : `<span style="font-size:0.75rem; color:#B91C1C; font-weight:700;">🔒 Nenhum curso atribuído</span>`;
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(u.name)}</strong></td>
+        <td><code>${escapeHtml(u.username)}</code></td>
+        <td><code>${escapeHtml(u.password)}</code></td>
+        <td>${escapeHtml(u.matricula)}</td>
+        <td>${escapeHtml(u.cargo)}</td>
+        <td>${courseTags}</td>
+        <td><span class="role-badge ${u.role === 'gestor' ? 'gestor' : 'colaborador'}">${u.role === 'gestor' ? 'Gestor' : 'Colaborador'}</span></td>
+        <td>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAssignCoursesToUserModal('${u.id}')">📌 Atribuir Cursos</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="populateUserFormForEdit('${u.id}')">✏️ Editar</button>
+            ${u.id !== appState.currentUserId ? `
+              <button type="button" class="btn btn-outline btn-sm" style="color:#B91C1C; border-color:#FCA5A5;" onclick="deleteUserProfile('${u.id}')">🗑️ Excluir</button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   return `
     <div class="portal-panel-card">
       <div class="portal-panel-header">
         <div>
-          <h3 id="userFormHeading">➕ Cadastrar Novo Perfil de Acesso (Definido pelo Gestor)</h3>
-          <p style="font-size:0.84rem; color:var(--nav-muted);">Crie logins individuais para os colaboradores da DNB-IZ acompanharem seus cursos e emitirem certificados.</p>
+          <h3 id="userFormHeading">➕ Cadastrar Novo Perfil de Acesso e Atribuir Cursos</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">Defina o login do operador e escolha exatamente quais cursos ficarão disponíveis para ele.</p>
         </div>
       </div>
 
@@ -2138,8 +2177,8 @@ function renderManagerUsersSubtab() {
           <div class="form-group">
             <label>Tipo de Perfil *</label>
             <select id="mgrUserRole" class="portal-select">
-              <option value="colaborador">👨‍✈️ Colaborador / Treinando (Realiza cursos)</option>
-              <option value="gestor">👑 Gestor / Administrador (Acesso total e relatórios)</option>
+              <option value="colaborador">👨‍✈️ Colaborador / Operador (Vê apenas os cursos atribuídos a ele)</option>
+              <option value="gestor">👑 Gestor / Administrador (Acesso gerencial e relatórios)</option>
             </select>
           </div>
           <div class="form-group">
@@ -2151,8 +2190,22 @@ function renderManagerUsersSubtab() {
             <input type="text" id="mgrUserPass" class="portal-input" placeholder="Ex: 1234" required />
           </div>
         </div>
+
+        <div class="form-group" style="margin-bottom:1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
+            <label style="margin:0;">📌 Cursos Atribuídos a este Perfil (Marque apenas os cursos que este operador deve ter acesso):</label>
+            <div style="display:flex; gap:0.4rem;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('mgrUserAssignedCourse', true)">Marcar Todos</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('mgrUserAssignedCourse', false)">Desmarcar Todos</button>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.45rem;">
+            ${courseCheckboxesHtml}
+          </div>
+        </div>
+
         <div style="display:flex; gap:0.75rem;">
-          <button type="submit" class="btn btn-primary">💾 Salvar Perfil de Acesso</button>
+          <button type="submit" class="btn btn-primary">💾 Salvar Perfil e Atribuição de Cursos</button>
           <button type="button" class="btn btn-outline" onclick="clearUserForm()">Limpar Formulário</button>
         </div>
       </form>
@@ -2160,7 +2213,7 @@ function renderManagerUsersSubtab() {
 
     <div class="portal-panel-card">
       <div class="portal-panel-header">
-        <h3>👥 Perfis Cadastrados na Unidade (${portalDB.users.length})</h3>
+        <h3>👥 Perfis Cadastrados e Cursos Atribuídos (${portalDB.users.length})</h3>
       </div>
       <div class="table-responsive">
         <table class="portal-table">
@@ -2171,6 +2224,7 @@ function renderManagerUsersSubtab() {
               <th>Senha</th>
               <th>Matrícula</th>
               <th>Cargo / Setor</th>
+              <th>Cursos Atribuídos pelo Gestor</th>
               <th>Nível</th>
               <th>Ações</th>
             </tr>
@@ -2182,6 +2236,56 @@ function renderManagerUsersSubtab() {
   `;
 }
 
+function toggleAllCourseCheckboxes(checkboxName, checkedState) {
+  document.querySelectorAll(`input[name="${checkboxName}"]`).forEach(cb => {
+    cb.checked = checkedState;
+  });
+}
+
+function openAssignCoursesToUserModal(userId) {
+  const user = portalDB.users.find(u => u.id === userId);
+  if (!user) return;
+  const currentAssigned = Array.isArray(user.assignedCourses) ? user.assignedCourses : [];
+
+  const listHtml = portalDB.courses.map(c => {
+    const isChecked = currentAssigned.includes(c.id);
+    return `
+      <label style="display:flex; align-items:flex-start; gap:0.7rem; background:${isChecked ? '#EFF6FF' : '#F8FAFC'}; border:1.5px solid ${isChecked ? '#3B82F6' : '#CBD5E1'}; padding:0.75rem 1rem; border-radius:10px; cursor:pointer; margin-bottom:0.5rem;">
+        <input type="checkbox" name="modalAssignCourseCb" value="${escapeHtml(c.id)}" ${isChecked ? 'checked' : ''} style="margin-top:0.2rem; transform:scale(1.2); accent-color:var(--nav-blue);" />
+        <div>
+          <strong style="color:var(--nav-navy); display:block;">${escapeHtml(c.code)} — ${escapeHtml(c.title)}</strong>
+          <span style="font-size:0.78rem; color:var(--nav-muted);">Carga Horária: ${c.workloadHours}h • ${escapeHtml(c.normas || '')}</span>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  showModal({
+    type: 'success',
+    title: `📌 Atribuir Cursos ao Operador: ${user.name}`,
+    message: `
+      <p style="font-size:0.86rem; color:var(--nav-muted); margin-bottom:0.85rem;">
+        Selecione abaixo apenas os cursos que devem aparecer como disponíveis quando <strong>${escapeHtml(user.name)} (${escapeHtml(user.matricula)})</strong> acessar a Academia DNIZ:
+      </p>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('modalAssignCourseCb', true)">✓ Liberar Todos</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('modalAssignCourseCb', false)">✕ Remover Todos</button>
+      </div>
+      <div style="max-height:280px; overflow-y:auto;">
+        ${listHtml}
+      </div>
+    `,
+    buttonText: '💾 Salvar Cursos deste Operador',
+    secondaryButtonText: 'Cancelar',
+    onConfirm: () => {
+      const picked = Array.from(document.querySelectorAll('input[name="modalAssignCourseCb"]:checked')).map(cb => cb.value);
+      user.assignedCourses = picked;
+      saveState(true);
+      renderPortalDashboard();
+    }
+  });
+}
+
 function handleSaveUserProfile(event) {
   event.preventDefault();
   const editId = document.getElementById('editUserIdInput').value.trim();
@@ -2191,6 +2295,7 @@ function handleSaveUserProfile(event) {
   const role = document.getElementById('mgrUserRole').value;
   const username = document.getElementById('mgrUserLogin').value.trim();
   const password = document.getElementById('mgrUserPass').value.trim();
+  const assignedCourses = Array.from(document.querySelectorAll('input[name="mgrUserAssignedCourse"]:checked')).map(cb => cb.value);
 
   if (!name || !username || !password) return;
 
@@ -2214,6 +2319,7 @@ function handleSaveUserProfile(event) {
       target.role = role;
       target.username = username;
       target.password = password;
+      target.assignedCourses = assignedCourses;
     }
   } else {
     const newId = 'usr-' + Date.now();
@@ -2225,7 +2331,7 @@ function handleSaveUserProfile(event) {
       matricula,
       cargo,
       role,
-      assignedCourses: portalDB.courses.map(c => c.id),
+      assignedCourses,
       active: true
     });
   }
@@ -2234,8 +2340,8 @@ function handleSaveUserProfile(event) {
   renderPortalDashboard();
   showModal({
     type: 'success',
-    title: 'Perfil Salvo com Sucesso!',
-    message: `O perfil de <strong>${escapeHtml(name)}</strong> (Login: <code>${escapeHtml(username)}</code> / Senha: <code>${escapeHtml(password)}</code>) já está liberado para acesso na Academia DNIZ.`,
+    title: 'Perfil e Cursos Atribuídos Salvos!',
+    message: `O perfil de <strong>${escapeHtml(name)}</strong> (Login: <code>${escapeHtml(username)}</code>) foi salvo com <strong>${assignedCourses.length} curso(s) atribuído(s)</strong>.`,
     buttonText: 'Perfeito'
   });
 }
@@ -2250,8 +2356,12 @@ function populateUserFormForEdit(userId) {
   document.getElementById('mgrUserRole').value = u.role;
   document.getElementById('mgrUserLogin').value = u.username;
   document.getElementById('mgrUserPass').value = u.password;
+  const assignedIds = Array.isArray(u.assignedCourses) ? u.assignedCourses : [];
+  document.querySelectorAll('input[name="mgrUserAssignedCourse"]').forEach(cb => {
+    cb.checked = assignedIds.includes(cb.value);
+  });
   const heading = document.getElementById('userFormHeading');
-  if (heading) heading.textContent = `✏️ Editando Perfil: ${u.name}`;
+  if (heading) heading.textContent = `✏️ Editando Perfil e Cursos de: ${u.name}`;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2262,8 +2372,9 @@ function clearUserForm() {
   document.getElementById('mgrUserCargo').value = '';
   document.getElementById('mgrUserLogin').value = '';
   document.getElementById('mgrUserPass').value = '';
+  toggleAllCourseCheckboxes('mgrUserAssignedCourse', true);
   const heading = document.getElementById('userFormHeading');
-  if (heading) heading.textContent = '➕ Cadastrar Novo Perfil de Acesso (Definido pelo Gestor)';
+  if (heading) heading.textContent = '➕ Cadastrar Novo Perfil de Acesso e Atribuir Cursos';
 }
 
 function deleteUserProfile(userId) {
@@ -2288,25 +2399,44 @@ function managerResetUserCourse(userId) {
 }
 
 function renderManagerCoursesSubtab() {
-  const rows = portalDB.courses.map(c => `
-    <tr>
-      <td><strong>${escapeHtml(c.code)}</strong></td>
-      <td>
-        <strong>${escapeHtml(c.title)}</strong>
-        <div style="font-size:0.76rem; color:var(--nav-muted);">${escapeHtml(c.normas || '')}</div>
-      </td>
-      <td>${escapeHtml(c.category || 'Operacional')}</td>
-      <td><strong>${c.workloadHours}h</strong></td>
-      <td><span class="status-badge badge-completed">Ativo no Catálogo</span></td>
-    </tr>
+  const operatorCheckboxesHtml = portalDB.users.map(u => `
+    <label style="display:inline-flex; align-items:center; gap:0.45rem; background:#F8FAFC; border:1px solid #CBD5E1; padding:0.45rem 0.75rem; border-radius:8px; cursor:pointer; font-size:0.82rem;">
+      <input type="checkbox" name="newCourseAssignUser" value="${escapeHtml(u.id)}" style="accent-color:var(--nav-blue);" />
+      <span><strong>${escapeHtml(u.name)}</strong> (${escapeHtml(u.matricula)})</span>
+    </label>
   `).join('');
+
+  const rows = portalDB.courses.map(c => {
+    const assignedUsers = portalDB.users.filter(u => Array.isArray(u.assignedCourses) && u.assignedCourses.includes(c.id));
+    return `
+      <tr>
+        <td><strong>${escapeHtml(c.code)}</strong></td>
+        <td>
+          <strong>${escapeHtml(c.title)}</strong>
+          <div style="font-size:0.76rem; color:var(--nav-muted);">${escapeHtml(c.normas || '')}</div>
+        </td>
+        <td><strong>${c.workloadHours}h</strong></td>
+        <td>
+          <strong>${assignedUsers.length} de ${portalDB.users.length} perfis</strong>
+          <div style="font-size:0.74rem; color:var(--nav-muted);">
+            ${assignedUsers.length ? assignedUsers.map(u => escapeHtml(u.name)).join(', ') : 'Nenhum operador atribuído'}
+          </div>
+        </td>
+        <td>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAssignUsersToCourseModal('${c.id}')">
+            👥 Atribuir a Operadores (${assignedUsers.length})
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   return `
     <div class="portal-panel-card">
       <div class="portal-panel-header">
         <div>
           <h3>➕ Adicionar Novo Curso na Base da Academia DNIZ</h3>
-          <p style="font-size:0.84rem; color:var(--nav-muted);">Expanda o catálogo da unidade (ex.: SMS/SGSO, Procedimentos AFIS, Manutenção CNS, Fraseologia).</p>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">Cadastre o curso e escolha apenas os operadores que devem tê-lo disponível em seus perfis.</p>
         </div>
       </div>
       <form onsubmit="handleAddCourseCatalog(event)">
@@ -2332,13 +2462,28 @@ function renderManagerCoursesSubtab() {
           <label>Descrição do Curso *</label>
           <input type="text" id="newCourseDesc" class="portal-input" placeholder="Resumo dos módulos e objetivos de capacitação..." required />
         </div>
-        <button type="submit" class="btn btn-primary">📚 Incluir Curso no Catálogo da Unidade</button>
+        <div class="form-group" style="margin-bottom:1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
+            <label style="margin:0;">👥 Atribuir este novo curso aos seguintes operadores (opcional — você também pode atribuir depois):</label>
+            <div style="display:flex; gap:0.4rem;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('newCourseAssignUser', true)">Todos</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('newCourseAssignUser', false)">Nenhum</button>
+            </div>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+            ${operatorCheckboxesHtml}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">📚 Cadastrar Curso na Academia DNIZ</button>
       </form>
     </div>
 
     <div class="portal-panel-card">
       <div class="portal-panel-header">
-        <h3>📚 Cursos Cadastrados na Academia DNIZ (${portalDB.courses.length})</h3>
+        <div>
+          <h3>📚 Cursos Cadastrados e Controle de Atribuição por Operador (${portalDB.courses.length})</h3>
+          <p style="font-size:0.84rem; color:var(--nav-muted);">Clique em "👥 Atribuir a Operadores" para definir quem enxerga cada treinamento.</p>
+        </div>
       </div>
       <div class="table-responsive">
         <table class="portal-table">
@@ -2346,9 +2491,9 @@ function renderManagerCoursesSubtab() {
             <tr>
               <th>Código</th>
               <th>Título e Base Normativa</th>
-              <th>Área</th>
               <th>Carga Horária</th>
-              <th>Status</th>
+              <th>Operadores com Acesso Atribuído</th>
+              <th>Controle de Atribuição</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -2358,6 +2503,59 @@ function renderManagerCoursesSubtab() {
   `;
 }
 
+function openAssignUsersToCourseModal(courseId) {
+  const course = portalDB.courses.find(c => c.id === courseId);
+  if (!course) return;
+
+  const usersHtml = portalDB.users.map(u => {
+    const hasCourse = Array.isArray(u.assignedCourses) && u.assignedCourses.includes(course.id);
+    return `
+      <label style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; background:${hasCourse ? '#EFF6FF' : '#F8FAFC'}; border:1.5px solid ${hasCourse ? '#3B82F6' : '#CBD5E1'}; padding:0.7rem 1rem; border-radius:10px; cursor:pointer; margin-bottom:0.45rem;">
+        <div style="display:flex; align-items:center; gap:0.7rem;">
+          <input type="checkbox" name="modalAssignUserCb" value="${escapeHtml(u.id)}" ${hasCourse ? 'checked' : ''} style="transform:scale(1.2); accent-color:var(--nav-blue);" />
+          <div>
+            <strong style="color:var(--nav-navy); display:block;">${escapeHtml(u.name)} (${escapeHtml(u.matricula)})</strong>
+            <span style="font-size:0.76rem; color:var(--nav-muted);">${escapeHtml(u.cargo)} • Login: <code>${escapeHtml(u.username)}</code></span>
+          </div>
+        </div>
+        <span class="role-badge ${u.role === 'gestor' ? 'gestor' : 'colaborador'}">${u.role === 'gestor' ? 'Gestor' : 'Operador'}</span>
+      </label>
+    `;
+  }).join('');
+
+  showModal({
+    type: 'success',
+    title: `👥 Operadores Atribuídos ao Curso: ${course.code}`,
+    message: `
+      <p style="font-size:0.86rem; color:var(--nav-muted); margin-bottom:0.8rem;">
+        Marque abaixo apenas os operadores/perfis que devem visualizar e realizar o curso <strong>${escapeHtml(course.title)}</strong>:
+      </p>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('modalAssignUserCb', true)">✓ Atribuir a Todos</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllCourseCheckboxes('modalAssignUserCb', false)">✕ Remover de Todos</button>
+      </div>
+      <div style="max-height:290px; overflow-y:auto;">
+        ${usersHtml}
+      </div>
+    `,
+    buttonText: '💾 Salvar Atribuição de Operadores',
+    secondaryButtonText: 'Cancelar',
+    onConfirm: () => {
+      const selectedUserIds = Array.from(document.querySelectorAll('input[name="modalAssignUserCb"]:checked')).map(cb => cb.value);
+      portalDB.users.forEach(u => {
+        if (!Array.isArray(u.assignedCourses)) u.assignedCourses = [];
+        if (selectedUserIds.includes(u.id)) {
+          if (!u.assignedCourses.includes(course.id)) u.assignedCourses.push(course.id);
+        } else {
+          u.assignedCourses = u.assignedCourses.filter(id => id !== course.id);
+        }
+      });
+      saveState(true);
+      renderPortalDashboard();
+    }
+  });
+}
+
 function handleAddCourseCatalog(event) {
   event.preventDefault();
   const title = document.getElementById('newCourseTitle').value.trim();
@@ -2365,6 +2563,7 @@ function handleAddCourseCatalog(event) {
   const workloadHours = parseInt(document.getElementById('newCourseHours').value, 10) || 4;
   const normas = document.getElementById('newCourseNormas').value.trim();
   const description = document.getElementById('newCourseDesc').value.trim();
+  const selectedUserIds = Array.from(document.querySelectorAll('input[name="newCourseAssignUser"]:checked')).map(cb => cb.value);
 
   if (!title || !code) return;
   const newCourseId = 'course-' + Date.now();
@@ -2380,9 +2579,12 @@ function handleAddCourseCatalog(event) {
     hasInteractiveEngine: true
   });
 
+  // Atribui apenas aos operadores explicitamente marcados pelo Gestor
   portalDB.users.forEach(u => {
     if (!Array.isArray(u.assignedCourses)) u.assignedCourses = [];
-    if (!u.assignedCourses.includes(newCourseId)) u.assignedCourses.push(newCourseId);
+    if (selectedUserIds.includes(u.id) && !u.assignedCourses.includes(newCourseId)) {
+      u.assignedCourses.push(newCourseId);
+    }
   });
 
   saveState(true);
@@ -2390,7 +2592,7 @@ function handleAddCourseCatalog(event) {
   showModal({
     type: 'success',
     title: 'Curso Adicionado à Academia DNIZ!',
-    message: `O curso <strong>${escapeHtml(title)}</strong> foi cadastrado e disponibilizado para os perfis da unidade.`,
+    message: `O curso <strong>${escapeHtml(title)}</strong> foi cadastrado e atribuído a <strong>${selectedUserIds.length} operador(es)</strong> selecionado(s).`,
     buttonText: 'OK'
   });
 }
@@ -2538,7 +2740,20 @@ function exportManagerReportCSV() {
 // ============================================================================
 function openCourseFromPortal(courseId, goStraightToFocus = false) {
   if (!appState.currentUserId) return;
-  appState.activeCourseId = courseId || 'avsec-sbiz';
+  const user = getCurrentUser();
+  const targetCourseId = courseId || 'avsec-sbiz';
+  const assignedIds = user && Array.isArray(user.assignedCourses) ? user.assignedCourses : [];
+  if (!assignedIds.includes(targetCourseId)) {
+    showModal({
+      type: 'warning',
+      title: 'Curso Não Atribuído ao Seu Perfil',
+      message: 'Este curso ainda não foi atribuído ao seu perfil pelo Gestor da Academia DNIZ.',
+      buttonText: 'Entendi'
+    });
+    return;
+  }
+
+  appState.activeCourseId = targetCourseId;
   appState.inspectingUserIdForCert = null;
 
   const prog = getUserCourseProgress(appState.currentUserId, appState.activeCourseId);
