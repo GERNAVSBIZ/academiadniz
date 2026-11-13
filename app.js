@@ -25,11 +25,12 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 1: Safety vs. AVSEC (Você sabe a diferença?)',
         renderHtml: () => `
           <p style="font-size:0.96rem; margin-bottom:1rem;">
-            Na aviação civil, a palavra <strong>"segurança"</strong> possui duas vertentes bem distintas que todo empregado da <strong>NAV Brasil</strong> precisa dominar. Clique nos cartões abaixo para destacar seus focos e, em seguida, resolva o <strong>Desafio Rápido de Bancada</strong>:
+            Na aviação civil, a palavra <strong>"segurança"</strong> possui duas vertentes bem distintas que todo empregado da <strong>NAV Brasil</strong> precisa dominar. <strong>Clique em cada um dos cartões abaixo para confirmar a leitura</strong> e, em seguida, resolva o <strong>Desafio Rápido de Bancada</strong>:
           </p>
 
           <div class="dual-interactive-grid">
-            <div class="concept-card safety-card">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m1-p1', 'c1') ? 'card-read-done' : ''}" id="rcard-m1-p1-c1" onclick="markCardRead('m1-p1', 'c1')">
+              ${renderReadChip('m1-p1', 'c1')}
               <span class="concept-badge">🛠️ SAFETY (Segurança Operacional)</span>
               <h4 style="font-size:1.08rem; color:var(--nav-navy); margin-bottom:0.5rem;">Prevenção de Falhas Não Intencionais</h4>
               <p style="font-size:0.9rem; color:#334155;">
@@ -40,7 +41,8 @@ const COURSE_MODULES = [
               </div>
             </div>
 
-            <div class="concept-card avsec-card">
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m1-p1', 'c2') ? 'card-read-done' : ''}" id="rcard-m1-p1-c2" onclick="markCardRead('m1-p1', 'c2')">
+              ${renderReadChip('m1-p1', 'c2')}
               <span class="concept-badge">🛡️ AVSEC / SECURITY (Contra Atos Ilícitos)</span>
               <h4 style="font-size:1.08rem; color:var(--nav-navy); margin-bottom:0.5rem;">Proteção contra Atos Intencionais e Criminosos</h4>
               <p style="font-size:0.9rem; color:#334155;">
@@ -55,14 +57,14 @@ const COURSE_MODULES = [
           </div>
 
           <!-- 🎯 DESAFIO RÁPIDO DE BANCADA INTERATIVO -->
-          <div class="workbench-challenge" id="wb-m1-p1">
+          <div class="workbench-challenge" id="rcard-m1-p1-wb">
             <div class="workbench-header">
-              <span class="workbench-tag">🎯 DESAFIO RÁPIDO DE BANCADA (INTERATIVO)</span>
-              <span style="font-size:0.8rem; color:#FDE68A;">Clique na situação correta para testar sua resposta no console</span>
+              <span class="workbench-tag">🎯 DESAFIO RÁPIDO DE BANCADA (OBRIGATÓRIO)</span>
+              ${renderReadChip('m1-p1', 'wb')}
             </div>
             <div class="workbench-scenario">
               <strong>Cenário:</strong> Durante o turno na <strong>RDO-IZ (Imperatriz)</strong>, um Operador identifica duas situações distintas no console.<br>
-              ❓ <strong>Qual delas é uma ocorrência estritamente AVSEC? Clique sobre a situação correspondente:</strong>
+              ❓ <strong>Qual delas é uma ocorrência estritamente AVSEC? Clique sobre a situação correta:</strong>
             </div>
 
             <div class="scenario-choices">
@@ -86,50 +88,57 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 2: O Guarda-Chuva Normativo e a Responsabilidade de Todos',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            A segurança AVSEC no Brasil é regida por uma hierarquia rígida de regulamentos que garantem a soberania do espaço aéreo e a proteção do SISCEAB. <strong>Clique em cada degrau do Guarda-Chuva Normativo abaixo</strong> para inspecionar sua aplicação prática:
+            A segurança AVSEC no Brasil é regida por uma hierarquia rígida de regulamentos que garantem a soberania do espaço aéreo e a proteção do SISCEAB. <strong>Clique em TODOS os 4 degraus do Guarda-Chuva Normativo abaixo</strong> e responda ao quadro <strong>Mito vs. Fato</strong> para liberar o avanço:
           </p>
 
           <div class="normative-tree-layout">
             <div class="tree-stack">
-              <button type="button" class="tree-node-btn active" id="tree-btn-0" onclick="selectNormNode(0)">
-                <span class="node-code">📜 Decreto Presidencial nº 11.195/2022</span>
-                <span class="node-scope">PNAVSEC (Nacional)</span>
+              <button type="button" class="tree-node-btn ${isCardRead('m1-p2', 'n0') ? 'card-read-done' : ''}" id="tree-btn-0" onclick="selectNormNode(0)">
+                <div>
+                  <span class="node-code">📜 Decreto Presidencial nº 11.195/2022</span>
+                  <div style="font-size:0.75rem; color:var(--nav-muted);">PNAVSEC (Nacional)</div>
+                </div>
+                ${renderReadChip('m1-p2', 'n0')}
               </button>
               <div class="tree-arrow">│<br>▼</div>
-              <button type="button" class="tree-node-btn" id="tree-btn-1" onclick="selectNormNode(1)">
-                <span class="node-code">🏛️ DCA 205-7 / DCA 205-6</span>
-                <span class="node-scope">Diretriz AVSEC no COMAER</span>
+              <button type="button" class="tree-node-btn ${isCardRead('m1-p2', 'n1') ? 'card-read-done' : ''}" id="tree-btn-1" onclick="selectNormNode(1)">
+                <div>
+                  <span class="node-code">🏛️ DCA 205-7 / DCA 205-6</span>
+                  <div style="font-size:0.75rem; color:var(--nav-muted);">Diretriz AVSEC no COMAER</div>
+                </div>
+                ${renderReadChip('m1-p2', 'n1')}
               </button>
               <div class="tree-arrow">│<br>▼</div>
-              <button type="button" class="tree-node-btn" id="tree-btn-2" onclick="selectNormNode(2)">
-                <span class="node-code">🛡️ ICA 205-48</span>
-                <span class="node-scope">PNAVSECCEA (SeMS no SISCEAB)</span>
+              <button type="button" class="tree-node-btn ${isCardRead('m1-p2', 'n2') ? 'card-read-done' : ''}" id="tree-btn-2" onclick="selectNormNode(2)">
+                <div>
+                  <span class="node-code">🛡️ ICA 205-48</span>
+                  <div style="font-size:0.75rem; color:var(--nav-muted);">PNAVSECCEA (SeMS no SISCEAB)</div>
+                </div>
+                ${renderReadChip('m1-p2', 'n2')}
               </button>
               <div class="tree-arrow">│<br>▼</div>
-              <button type="button" class="tree-node-btn" id="tree-btn-3" onclick="selectNormNode(3)">
-                <span class="node-code">📡 PES-AVSEC SBIZ / MOp RDO-IZ</span>
-                <span class="node-scope">Execução Prática na DNB</span>
+              <button type="button" class="tree-node-btn ${isCardRead('m1-p2', 'n3') ? 'card-read-done' : ''}" id="tree-btn-3" onclick="selectNormNode(3)">
+                <div>
+                  <span class="node-code">📡 PES-AVSEC SBIZ / MOp RDO-IZ</span>
+                  <div style="font-size:0.75rem; color:var(--nav-muted);">Execução Prática na DNB</div>
+                </div>
+                ${renderReadChip('m1-p2', 'n3')}
               </button>
             </div>
 
             <div class="tree-detail-box" id="normTreeDetailBox">
-              <h4>📜 Decreto Presidencial nº 11.195/2022 ──► PNAVSEC (Âmbito Nacional)</h4>
+              <h4>👆 Clique em cada um dos 4 degraus normativos ao lado</h4>
               <p style="font-size:0.9rem; color:#1E293B; margin-bottom:0.75rem;">
-                É o ato normativo máximo do Governo Federal que institui o <strong>Programa Nacional de Segurança da Aviação Civil contra Atos de Interferência Ilícita (PNAVSEC)</strong>. Define responsabilidades entre COMAER, ANAC, Polícia Federal, operadores de aeródromos e provedores de navegação aérea.
+                Para destravar a próxima seção, inspecione cada uma das 4 normas (Decreto nº 11.195/2022, DCA 205-7/205-6, ICA 205-48 e PES-AVSEC SBIZ / MOp RDO-IZ) clicando nos botões à esquerda.
               </p>
-              <div>
-                <span class="ref-citation">CIRCEA-100-56, p. 9</span>
-                <span class="ref-citation">DCA-205-7, p. 10, 11</span>
-                <span class="ref-citation">PES-AVSEC_2026_01, p. 72</span>
-              </div>
             </div>
           </div>
 
           <!-- 💡 MITO VS. FATO INTERATIVO -->
-          <div class="myth-fact-box">
+          <div class="myth-fact-box" id="rcard-m1-p2-mf">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-              <strong style="color:#92400E; font-size:0.95rem;">💡 INTERAÇÃO RÁPIDA: MITO vs. FATO</strong>
-              <span style="font-size:0.78rem; color:#B45309;">Julgue a afirmação abaixo clicando em um dos botões:</span>
+              <strong style="color:#92400E; font-size:0.95rem;">💡 INTERAÇÃO OBRIGATÓRIA: MITO vs. FATO</strong>
+              ${renderReadChip('m1-p2', 'mf')}
             </div>
             <div class="myth-fact-statement">
               "Segurança AVSEC é dever exclusivo da Polícia Federal e da Guarda Patrimonial do Aeroporto."
@@ -148,29 +157,33 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 3: Estrutura do SeMS (Os 4 Pilares Fundamentais)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            O <strong>SeMS (Security Management System)</strong> é o sistema de gestão que integra a segurança ao dia a dia da NAV Brasil <span class="ref-citation">ICA-205-48, p. 16, 22</span>. <strong>Clique em cada um dos 4 Pilares abaixo</strong> para explorar sua função e a norma específica que o rege:
+            O <strong>SeMS (Security Management System)</strong> é o sistema de gestão que integra a segurança ao dia a dia da NAV Brasil <span class="ref-citation">ICA-205-48, p. 16, 22</span>. <strong>Clique obrigatoriamente em cada um dos 4 Pilares abaixo</strong> para liberar o Quiz do Módulo 1:
           </p>
 
           <div class="pillars-interactive-grid">
-            <button type="button" class="pillar-card-btn active explored" id="pillar-btn-0" onclick="selectSemsPillar(0)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m1-p3', 'p0') ? 'explored card-read-done' : ''}" id="pillar-btn-0" onclick="selectSemsPillar(0)">
+              ${renderReadChip('m1-p3', 'p0')}
               <div class="pillar-num">1</div>
               <h4>DIRETRIZ DE SEGURANÇA AVSEC</h4>
               <span class="pillar-norm-pill">DCA 205-7 / ICA 205-48</span>
             </button>
 
-            <button type="button" class="pillar-card-btn" id="pillar-btn-1" onclick="selectSemsPillar(1)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m1-p3', 'p1') ? 'explored card-read-done' : ''}" id="pillar-btn-1" onclick="selectSemsPillar(1)">
+              ${renderReadChip('m1-p3', 'p1')}
               <div class="pillar-num">2</div>
               <h4>GERENCIAMENTO DO RISCO AVSEC</h4>
               <span class="pillar-norm-pill">MCA 205-4 / ICA 205-51</span>
             </button>
 
-            <button type="button" class="pillar-card-btn" id="pillar-btn-2" onclick="selectSemsPillar(2)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m1-p3', 'p2') ? 'explored card-read-done' : ''}" id="pillar-btn-2" onclick="selectSemsPillar(2)">
+              ${renderReadChip('m1-p3', 'p2')}
               <div class="pillar-num">3</div>
               <h4>GARANTIA DA SEGURANÇA AVSEC</h4>
               <span class="pillar-norm-pill">ICA 800-8 / ESAB</span>
             </button>
 
-            <button type="button" class="pillar-card-btn" id="pillar-btn-3" onclick="selectSemsPillar(3)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m1-p3', 'p3') ? 'explored card-read-done' : ''}" id="pillar-btn-3" onclick="selectSemsPillar(3)">
+              ${renderReadChip('m1-p3', 'p3')}
               <div class="pillar-num">4</div>
               <h4>PROMOÇÃO DA SEGURANÇA AVSEC</h4>
               <span class="pillar-norm-pill">ICA 37-733</span>
@@ -179,15 +192,11 @@ const COURSE_MODULES = [
 
           <div class="pillar-spotlight" id="semsPillarSpotlight">
             <h4 style="color:var(--nav-navy); font-size:1.1rem; margin-bottom:0.45rem;">
-              1️⃣ DIRETRIZ DE SEGURANÇA AVSEC (Política e Objetivos)
+              👆 Clique em cada um dos 4 Pilares acima para ler seu detalhamento normativo
             </h4>
-            <p style="font-size:0.93rem; color:#1E293B; margin-bottom:0.65rem;">
-              Define a política e os objetivos estratégicos de proteção do SISCEAB, estabelecendo o compromisso da Alta Direção e as responsabilidades orgânicas (normatizada na <strong>DCA 205-7</strong> e <strong>ICA 205-48</strong>).
+            <p style="font-size:0.93rem; color:#1E293B;">
+              Todos os 4 cartões acima precisam ser clicados e lidos para liberar o Quiz de Validação (Trava 3/3).
             </p>
-            <div>
-              <span class="ref-citation">DCA-205-7, p. 10, 12</span>
-              <span class="ref-citation">ICA-205-48, p. 19</span>
-            </div>
           </div>
         `
       }
@@ -250,21 +259,24 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 1: As 3 Camadas de Defesa da DNB em Imperatriz (SBIZ / RDO-IZ)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            A proteção física da RDO-IZ adota o conceito de <strong>Defesa em Profundidade</strong>. <strong>Clique em cada uma das 3 Camadas abaixo</strong> para inspecionar os limites físicos e o nível de restrição na dependência de Imperatriz:
+            A proteção física da RDO-IZ adota o conceito de <strong>Defesa em Profundidade</strong>. <strong>Clique obrigatoriamente em cada uma das 3 Camadas abaixo</strong> para inspecionar os limites físicos e liberar a próxima seção:
           </p>
 
           <div class="pillars-interactive-grid">
-            <button type="button" class="pillar-card-btn active explored" id="layer-btn-0" onclick="selectDefenseLayer(0)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m2-p1', 'l0') ? 'explored card-read-done' : ''}" id="layer-btn-0" onclick="selectDefenseLayer(0)">
+              ${renderReadChip('m2-p1', 'l0')}
               <div class="pillar-num">1ª</div>
               <h4>1ª CAMADA: ÁREA PÚBLICA</h4>
               <span class="pillar-norm-pill">Externa / Sem Controle Prévio</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="layer-btn-1" onclick="selectDefenseLayer(1)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m2-p1', 'l1') ? 'explored card-read-done' : ''}" id="layer-btn-1" onclick="selectDefenseLayer(1)">
+              ${renderReadChip('m2-p1', 'l1')}
               <div class="pillar-num">2ª</div>
               <h4>2ª CAMADA: ÁREA CONTROLADA</h4>
               <span class="pillar-norm-pill">Perímetro Patrimonial DNB-IZ</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="layer-btn-2" onclick="selectDefenseLayer(2)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m2-p1', 'l2') ? 'explored card-read-done' : ''}" id="layer-btn-2" onclick="selectDefenseLayer(2)">
+              ${renderReadChip('m2-p1', 'l2')}
               <div class="pillar-num" style="background:var(--danger); color:#FFF;">3ª</div>
               <h4>3ª CAMADA: ÁREA RESTRITA (ARS)</h4>
               <span class="pillar-norm-pill">Sala AFIS • Sala Técnica • Telecom</span>
@@ -273,10 +285,10 @@ const COURSE_MODULES = [
 
           <div class="pillar-spotlight" id="defenseLayerSpotlight">
             <h4 style="color:var(--nav-navy); font-size:1.08rem; margin-bottom:0.45rem;">
-              1ª Camada de Defesa: Área Pública
+              👆 Clique em cada uma das 3 Camadas de Defesa acima para inspecionar
             </h4>
             <p style="font-size:0.92rem; color:#1E293B;">
-              Compreende as vias externas de acesso e áreas abertas ao público no entorno do sítio aeroportuário de Imperatriz (SBIZ). Não há controle prévio de identificação individual, sendo protegida por barreiras perimetrais (muros, alambrados, iluminação de segurança e avisos ostensivos).
+              É obrigatório clicar e ler os cartões da 1ª, 2ª e 3ª Camada de Defesa para liberar o avanço à Seção 2.
             </p>
           </div>
         `
@@ -287,11 +299,12 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 2: Normas de Credenciamento e Crachás de Acesso (ICA 63-14)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            A publicação do DECEA que disciplina os modelos, categorias e regras de credenciamento no âmbito do SISCEAB é a <strong>ICA 63-14</strong>, aplicada localmente pelo PES-AVSEC SBIZ e IT da dependência.
+            A publicação do DECEA que disciplina os modelos, categorias e regras de credenciamento no âmbito do SISCEAB é a <strong>ICA 63-14</strong>, aplicada localmente pelo PES-AVSEC SBIZ e IT da dependência. <strong>Clique nos 2 cartões abaixo e responda ao Mito vs. Fato:</strong>
           </p>
 
           <div class="dual-interactive-grid">
-            <div class="concept-card safety-card">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m2-p2', 'c1') ? 'card-read-done' : ''}" id="rcard-m2-p2-c1" onclick="markCardRead('m2-p2', 'c1')">
+              ${renderReadChip('m2-p2', 'c1')}
               <span class="concept-badge">🪪 Uso Ostensivo e Intransferível</span>
               <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Regras para Empregados NAV Brasil</h4>
               <ul style="padding-left:1.2rem; font-size:0.88rem; color:#334155;">
@@ -301,7 +314,8 @@ const COURSE_MODULES = [
               </ul>
             </div>
 
-            <div class="concept-card avsec-card">
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m2-p2', 'c2') ? 'card-read-done' : ''}" id="rcard-m2-p2-c2" onclick="markCardRead('m2-p2', 'c2')">
+              ${renderReadChip('m2-p2', 'c2')}
               <span class="concept-badge">👷 Visitantes e Terceirizados na ARS</span>
               <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Inspeção e Escolta Obrigatória</h4>
               <ul style="padding-left:1.2rem; font-size:0.88rem; color:#334155;">
@@ -311,10 +325,10 @@ const COURSE_MODULES = [
             </div>
           </div>
 
-          <div class="myth-fact-box">
+          <div class="myth-fact-box" id="rcard-m2-p2-mf">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-              <strong style="color:#92400E; font-size:0.95rem;">💡 INTERAÇÃO RÁPIDA: MITO vs. FATO (ICA 63-14)</strong>
-              <span style="font-size:0.78rem; color:#B45309;">Clique para validar:</span>
+              <strong style="color:#92400E; font-size:0.95rem;">💡 INTERAÇÃO OBRIGATÓRIA: MITO vs. FATO (ICA 63-14)</strong>
+              ${renderReadChip('m2-p2', 'mf')}
             </div>
             <div class="myth-fact-statement">
               "Se um técnico terceirizado de ar-condicionado já é conhecido da equipe há anos, ele pode ficar sozinho na Sala Técnica da RDO-IZ sem crachá e sem acompanhamento."
@@ -333,13 +347,33 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 3: Desafio a Pessoas Não Identificadas na ARS (Challenge)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            Todo colaborador credenciado na 3ª Camada (ARS) possui o dever de aplicar o <strong>Procedimento de Desafio (Abordagem Cortês)</strong> ao avistar qualquer pessoa sem credencial visível. Resolva o simulador de bancada abaixo:
+            Todo colaborador credenciado na 3ª Camada (ARS) possui o dever de aplicar o <strong>Procedimento de Desafio (Abordagem Cortês)</strong> ao avistar qualquer pessoa sem credencial visível. <strong>Clique nos 2 cartões de conduta abaixo e resolva o Desafio de Bancada:</strong>
           </p>
 
-          <div class="workbench-challenge" id="wb-m2-p3">
+          <div class="dual-interactive-grid">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m2-p3', 'c1') ? 'card-read-done' : ''}" id="rcard-m2-p3-c1" onclick="markCardRead('m2-p3', 'c1')">
+              ${renderReadChip('m2-p3', 'c1')}
+              <span class="concept-badge">🗣️ Passo 1: Abordagem Cortês e Firme</span>
+              <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Interpelação Imediata na ARS</h4>
+              <p style="font-size:0.88rem; color:#334155;">
+                Ao visualizar qualquer pessoa sem crachá ostensivo na Sala AFIS ou Sala Técnica, dirija-se a ela com cortesia: solicite a visualização da credencial e pergunte quem é o responsável pelo seu acompanhamento.
+              </p>
+            </div>
+
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m2-p3', 'c2') ? 'card-read-done' : ''}" id="rcard-m2-p3-c2" onclick="markCardRead('m2-p3', 'c2')">
+              ${renderReadChip('m2-p3', 'c2')}
+              <span class="concept-badge">🚨 Passo 2: Contenção e Comunicação</span>
+              <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Acionamento da Gerência / AVSEC</h4>
+              <p style="font-size:0.88rem; color:#334155;">
+                Nunca permita que pessoa não identificada circule sozinha na ARS. Mantenha supervisão visual, conduza-a para fora da área restrita e acione imediatamente a Gerência / Agente AVSEC local.
+              </p>
+            </div>
+          </div>
+
+          <div class="workbench-challenge" id="rcard-m2-p3-wb">
             <div class="workbench-header">
               <span class="workbench-tag">🎯 DESAFIO RÁPIDO DE BANCADA — CONTROLE DE ACESSO ARS</span>
-              <span style="font-size:0.8rem; color:#FDE68A;">Tome a decisão operacional correta</span>
+              ${renderReadChip('m2-p3', 'wb')}
             </div>
             <div class="workbench-scenario">
               <strong>Cenário:</strong> Ao sair da Sala Operacional AFIS em direção à Sala Técnica da RDO-IZ, você encontra uma pessoa sem crachá visível mexendo próxima ao bastidor de telecomunicações.<br>
@@ -420,26 +454,30 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 1: Reconhecimento de Ameaças Físicas e Defesa NBQR / BNQR',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            Ameaças físicas incluem pacotes abandonados, sabotagem em cabos/energia e artefatos contendo agentes <strong>NBQR / BNQR (Biológico, Nuclear, Químico e Radiológico)</strong>. Clique nos botões do protocolo abaixo para inspecionar a conduta correta:
+            Ameaças físicas incluem pacotes abandonados, sabotagem em cabos/energia e artefatos contendo agentes <strong>NBQR / BNQR (Biológico, Nuclear, Químico e Radiológico)</strong>. <strong>Clique obrigatoriamente nos 4 botões do protocolo abaixo</strong> para inspecionar a conduta correta e destravar a próxima seção:
           </p>
 
           <div class="pillars-interactive-grid">
-            <button type="button" class="pillar-card-btn active explored" id="nbqr-btn-0" onclick="selectNbqrStep(0)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m3-p1', 'nb0') ? 'explored card-read-done' : ''}" id="nbqr-btn-0" onclick="selectNbqrStep(0)">
+              ${renderReadChip('m3-p1', 'nb0')}
               <div class="pillar-num" style="background:var(--danger); color:#FFF;">1</div>
               <h4>NÃO TOCAR / NÃO MOVER</h4>
               <span class="pillar-norm-pill">Regra Primária Absoluta</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="nbqr-btn-1" onclick="selectNbqrStep(1)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m3-p1', 'nb1') ? 'explored card-read-done' : ''}" id="nbqr-btn-1" onclick="selectNbqrStep(1)">
+              ${renderReadChip('m3-p1', 'nb1')}
               <div class="pillar-num">2</div>
               <h4>ISOLAR PERÍMETRO IMEDIATO</h4>
               <span class="pillar-norm-pill">Conter Dispersão / Onda de Choque</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="nbqr-btn-2" onclick="selectNbqrStep(2)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m3-p1', 'nb2') ? 'explored card-read-done' : ''}" id="nbqr-btn-2" onclick="selectNbqrStep(2)">
+              ${renderReadChip('m3-p1', 'nb2')}
               <div class="pillar-num">3</div>
               <h4>ZERO RADIOFREQUÊNCIA PRÓXIMA</h4>
               <span class="pillar-norm-pill">Afaste Rádios HT e Celulares</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="nbqr-btn-3" onclick="selectNbqrStep(3)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m3-p1', 'nb3') ? 'explored card-read-done' : ''}" id="nbqr-btn-3" onclick="selectNbqrStep(3)">
+              ${renderReadChip('m3-p1', 'nb3')}
               <div class="pillar-num">4</div>
               <h4>ACIONAR AUTORIDADES</h4>
               <span class="pillar-norm-pill">Gerência • APOC • PF • Bombeiros</span>
@@ -448,10 +486,10 @@ const COURSE_MODULES = [
 
           <div class="pillar-spotlight" id="nbqrSpotlight">
             <h4 style="color:var(--danger-dark); font-size:1.08rem; margin-bottom:0.45rem;">
-              1️⃣ Ação Primária: NÃO TOCAR, NÃO ABRIR E NÃO INALAR
+              👆 Clique em cada um dos 4 passos do protocolo NBQR/BNQR acima
             </h4>
             <p style="font-size:0.92rem; color:#1E293B;">
-              Diante de qualquer pacote suspeito, pó desconhecido, líquido incomum ou recipiente abandonado próximo à RDO-IZ, <strong>jamais toque, sacuda ou tente abrir o artefato</strong>. Qualquer manipulação pode acionar uma espoleta ou dispersar agentes biológicos/químicos no ambiente operacional.
+              Leia todos os 4 cartões acima para liberar o avanço à Seção 2.
             </p>
           </div>
         `
@@ -462,13 +500,33 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 2: Proteção de Sistemas Críticos e Cibersegurança (ICA 205-48, Item 8.2)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            Conforme o <strong>Item 8.2 da ICA 205-48</strong>, os consoles operacionais AFIS, servidores de gravação, enlaces de dados e redes do SISCEAB são <strong>Sistemas Críticos de Missão</strong>. Teste sua reação no Desafio de Bancada Cibernético abaixo:
+            Conforme o <strong>Item 8.2 da ICA 205-48</strong>, os consoles operacionais AFIS, servidores de gravação, enlaces de dados e redes do SISCEAB são <strong>Sistemas Críticos de Missão</strong>. <strong>Clique nos 2 cartões abaixo e resolva o Desafio de Bancada Cibernético:</strong>
           </p>
 
-          <div class="workbench-challenge" id="wb-m3-p2">
+          <div class="dual-interactive-grid">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m3-p2', 'c1') ? 'card-read-done' : ''}" id="rcard-m3-p2-c1" onclick="markCardRead('m3-p2', 'c1')">
+              ${renderReadChip('m3-p2', 'c1')}
+              <span class="concept-badge">🚫 Bloqueio Físico e Lógico (USB)</span>
+              <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Proibição de Mídias Não Homologadas</h4>
+              <p style="font-size:0.88rem; color:#334155;">
+                É estritamente proibido conectar <em>pen drives</em> particulares, HDs externos, cabos de recarga de celulares ou periféricos estranhos nos consoles operacionais AFIS e bastidores da Sala Técnica.
+              </p>
+            </div>
+
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m3-p2', 'c2') ? 'card-read-done' : ''}" id="rcard-m3-p2-c2" onclick="markCardRead('m3-p2', 'c2')">
+              ${renderReadChip('m3-p2', 'c2')}
+              <span class="concept-badge">🔐 Credenciais e Segregação de Rede</span>
+              <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Proteção de Redes Críticas do SISCEAB</h4>
+              <p style="font-size:0.88rem; color:#334155;">
+                Senhas operacionais são individuais e intransferíveis. Qualquer comportamento anômalo de rede, tentativa de acesso indevido ou falha cibernética deve ser reportada imediatamente à manutenção e registrada em RELSEC.
+              </p>
+            </div>
+          </div>
+
+          <div class="workbench-challenge" id="rcard-m3-p2-wb">
             <div class="workbench-header">
               <span class="workbench-tag">🎯 DESAFIO RÁPIDO DE BANCADA — CIBERSEGURANÇA (ICA 205-48, Item 8.2)</span>
-              <span style="font-size:0.8rem; color:#FDE68A;">Proteja os consoles operacionais da RDO-IZ</span>
+              ${renderReadChip('m3-p2', 'wb')}
             </div>
             <div class="workbench-scenario">
               <strong>Cenário:</strong> Durante o plantão na Sala AFIS de Imperatriz, a bateria do seu smartphone está em 2% e você também trouxe um <em>pen drive</em> pessoal com arquivos para imprimir. A porta USB do console operacional do SISCEAB está livre.<br>
@@ -496,18 +554,20 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 3: Operação Não Autorizada de Drones / UAS em SBIZ',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            A presença de <strong>Drones / UAS (Aeronaves Remotamente Pilotadas)</strong> sem autorização SARPAS/DECEA na zona de aproximação de Imperatriz (SBIZ) ou sobre as antenas da RDO-IZ é uma ocorrência grave que exige pronta resposta.
+            A presença de <strong>Drones / UAS (Aeronaves Remotamente Pilotadas)</strong> sem autorização SARPAS/DECEA na zona de aproximação de Imperatriz (SBIZ) ou sobre as antenas da RDO-IZ é uma ocorrência grave que exige pronta resposta. <strong>Clique nos 2 cartões de impacto e responda ao Mito vs. Fato:</strong>
           </p>
 
           <div class="dual-interactive-grid">
-            <div class="concept-card safety-card">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m3-p3', 'c1') ? 'card-read-done' : ''}" id="rcard-m3-p3-c1" onclick="markCardRead('m3-p3', 'c1')">
+              ${renderReadChip('m3-p3', 'c1')}
               <span class="concept-badge">✈️ Impacto Safety</span>
               <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Risco de Colisão em Voo</h4>
               <p style="font-size:0.88rem; color:#334155;">
                 Ameaça direta às aeronaves na final de aproximação ou decolagem em SBIZ, exigindo informação imediata de tráfego na frequência <strong>VHF 125.65 MHz</strong>.
               </p>
             </div>
-            <div class="concept-card avsec-card">
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m3-p3', 'c2') ? 'card-read-done' : ''}" id="rcard-m3-p3-c2" onclick="markCardRead('m3-p3', 'c2')">
+              ${renderReadChip('m3-p3', 'c2')}
               <span class="concept-badge">🕵️ Impacto AVSEC</span>
               <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Vigilância Hostil ou Sabotagem</h4>
               <p style="font-size:0.88rem; color:#334155;">
@@ -516,10 +576,10 @@ const COURSE_MODULES = [
             </div>
           </div>
 
-          <div class="myth-fact-box">
+          <div class="myth-fact-box" id="rcard-m3-p3-mf">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-              <strong style="color:#92400E; font-size:0.95rem;">💡 INTERAÇÃO RÁPIDA: MITO vs. FATO (DRONES EM SBIZ)</strong>
-              <span style="font-size:0.78rem; color:#B45309;">Julgue a afirmação:</span>
+              <strong style="color:#92400E; font-size:0.95rem;">💡 INTERAÇÃO OBRIGATÓRIA: MITO vs. FATO (DRONES EM SBIZ)</strong>
+              ${renderReadChip('m3-p3', 'mf')}
             </div>
             <div class="myth-fact-statement">
               "Drones pequenos voando sem autorização perto da cabeceira da pista de SBIZ são apenas brinquedos recreativos e não precisam ser reportados ao controle nem ao APOC."
@@ -591,26 +651,30 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 1: ESAB (Anexo G da CIRCEA 100-56/2025) e Cadeia de Acionamento',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            No recebimento de uma ameaça de bomba (real ou em <strong>Exercício Simulado de Ameaça de Bomba — ESAB</strong>), o operador utiliza imediatamente o <strong>Questionário Padrão do Anexo G da CIRCEA 100-56/2025</strong> e executa o protocolo de comunicações da RDO-IZ. <strong>Clique em cada passo da cadeia operacional abaixo:</strong>
+            No recebimento de uma ameaça de bomba (real ou em <strong>Exercício Simulado de Ameaça de Bomba — ESAB</strong>), o operador utiliza imediatamente o <strong>Questionário Padrão do Anexo G da CIRCEA 100-56/2025</strong> e executa o protocolo de comunicações da RDO-IZ. <strong>Clique obrigatoriamente nos 4 passos da cadeia operacional abaixo:</strong>
           </p>
 
           <div class="pillars-interactive-grid">
-            <button type="button" class="pillar-card-btn active explored" id="esab-btn-0" onclick="selectEsabStep(0)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m4-p1', 'es0') ? 'explored card-read-done' : ''}" id="esab-btn-0" onclick="selectEsabStep(0)">
+              ${renderReadChip('m4-p1', 'es0')}
               <div class="pillar-num">1</div>
               <h4>ANEXO G (CIRCEA 100-56/2025)</h4>
               <span class="pillar-norm-pill">Questionário de Ameaça de Bomba</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="esab-btn-1" onclick="selectEsabStep(1)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m4-p1', 'es1') ? 'explored card-read-done' : ''}" id="esab-btn-1" onclick="selectEsabStep(1)">
+              ${renderReadChip('m4-p1', 'es1')}
               <div class="pillar-num">2</div>
               <h4>FONIA VHF 125.65 MHz</h4>
               <span class="pillar-norm-pill">Frequência AFIS Imperatriz</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="esab-btn-2" onclick="selectEsabStep(2)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m4-p1', 'es2') ? 'explored card-read-done' : ''}" id="esab-btn-2" onclick="selectEsabStep(2)">
+              ${renderReadChip('m4-p1', 'es2')}
               <div class="pillar-num">3</div>
               <h4>ACC-AZ (TF-2) e CGNA</h4>
               <span class="pillar-norm-pill">Coordenação ATS / ATFM</span>
             </button>
-            <button type="button" class="pillar-card-btn" id="esab-btn-3" onclick="selectEsabStep(3)">
+            <button type="button" class="pillar-card-btn ${isCardRead('m4-p1', 'es3') ? 'explored card-read-done' : ''}" id="esab-btn-3" onclick="selectEsabStep(3)">
+              ${renderReadChip('m4-p1', 'es3')}
               <div class="pillar-num">4</div>
               <h4>APOC e POLÍCIA FEDERAL</h4>
               <span class="pillar-norm-pill">Resposta de Segurança e Varredura</span>
@@ -619,10 +683,10 @@ const COURSE_MODULES = [
 
           <div class="pillar-spotlight" id="esabSpotlight">
             <h4 style="color:var(--nav-navy); font-size:1.08rem; margin-bottom:0.45rem;">
-              1️⃣ Aplicação do Anexo G da CIRCEA 100-56/2025
+              👆 Clique em cada um dos 4 cartões acima para visualizar a cadeia completa de acionamento
             </h4>
             <p style="font-size:0.92rem; color:#1E293B;">
-              O <strong>Anexo G da CIRCEA 100-56/2025</strong> estabelece o questionário padrão para coleta máxima de dados do ameaçador: <em>"Onde está a bomba?", "Quando vai explodir?", "Qual o formato/aparência?", "Qual aeronave ou instalação é o alvo?"</em>, além do registro de características da voz, ruídos de fundo e número chamador (BINA).
+              Todos os 4 cartões acima precisam ser clicados e lidos para liberar a Seção 2.
             </p>
           </div>
         `
@@ -633,11 +697,12 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 2: Evacuação AVSEC vs. Evacuação SMS/SGSO e Ponto de Encontro (PE)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            Você sabia que uma evacuação por <strong>Ameaça de Bomba (AVSEC)</strong> possui diferenças importantes em relação a uma evacuação por <strong>Incêndio (SMS/SGSO)</strong>? Compare abaixo:
+            Uma evacuação por <strong>Ameaça de Bomba (AVSEC)</strong> possui diferenças importantes em relação a uma evacuação por <strong>Incêndio (SMS/SGSO)</strong>. <strong>Clique obrigatoriamente nos 3 cartões abaixo para confirmar a leitura:</strong>
           </p>
 
           <div class="dual-interactive-grid">
-            <div class="concept-card avsec-card">
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m4-p2', 'c1') ? 'card-read-done' : ''}" id="rcard-m4-p2-c1" onclick="markCardRead('m4-p2', 'c1')">
+              ${renderReadChip('m4-p2', 'c1')}
               <span class="concept-badge">💣 Evacuação AVSEC (Ameaça Ilícita / Bomba)</span>
               <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Abandono Ordenado + Pertences Pessoais</h4>
               <ul style="padding-left:1.2rem; font-size:0.88rem; color:#334155;">
@@ -647,7 +712,8 @@ const COURSE_MODULES = [
               </ul>
             </div>
 
-            <div class="concept-card safety-card">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m4-p2', 'c2') ? 'card-read-done' : ''}" id="rcard-m4-p2-c2" onclick="markCardRead('m4-p2', 'c2')">
+              ${renderReadChip('m4-p2', 'c2')}
               <span class="concept-badge">🔥 Evacuação SMS / SGSO (Incêndio / Sinistro)</span>
               <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Abandono Imediato Contra Chamas/Fumaça</h4>
               <ul style="padding-left:1.2rem; font-size:0.88rem; color:#334155;">
@@ -657,6 +723,15 @@ const COURSE_MODULES = [
               </ul>
             </div>
           </div>
+
+          <div class="concept-card clickable-read-card ${isCardRead('m4-p2', 'c3') ? 'card-read-done' : ''}" id="rcard-m4-p2-c3" onclick="markCardRead('m4-p2', 'c3')" style="margin-top:1rem;">
+            ${renderReadChip('m4-p2', 'c3')}
+            <span class="concept-badge" style="background:#FEF3C7; color:#92400E;">📍 PE — PONTO DE ENCONTRO E CONTAGEM NOMINAL (HEADCOUNT)</span>
+            <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Controle Obrigatório de Efetivo no Ponto de Encontro (PE)</h4>
+            <p style="font-size:0.88rem; color:#334155;">
+              No <strong>Ponto de Encontro (PE)</strong>, localizado a distância segura de estilhaços e ondas de choque, é realizada imediatamente a <strong>contagem nominal (<em>headcount</em>)</strong> de todos os empregados, terceirizados e visitantes. Ninguém pode se ausentar do PE nem retornar ao prédio sem autorização formal.
+            </p>
+          </div>
         `
       },
       {
@@ -665,13 +740,33 @@ const COURSE_MODULES = [
         title: '📌 SEÇÃO 3: Reassunção do Serviço ("Área Segura") e RELSEC no SGAVSEC (Até 24h)',
         renderHtml: () => `
           <p style="font-size:0.95rem; margin-bottom:1rem;">
-            Após uma evacuação AVSEC, o retorno à Sala AFIS e Sala Técnica obedece a um rito rigoroso. Resolva o Desafio Rápido de Bancada abaixo:
+            Após uma evacuação AVSEC, o retorno à Sala AFIS e Sala Técnica obedece a um rito rigoroso. <strong>Clique nos 2 cartões abaixo e resolva o Desafio Rápido de Bancada para liberar o Quiz do Módulo 4:</strong>
           </p>
 
-          <div class="workbench-challenge" id="wb-m4-p3">
+          <div class="dual-interactive-grid">
+            <div class="concept-card safety-card clickable-read-card ${isCardRead('m4-p3', 'c1') ? 'card-read-done' : ''}" id="rcard-m4-p3-c1" onclick="markCardRead('m4-p3', 'c1')">
+              ${renderReadChip('m4-p3', 'c1')}
+              <span class="concept-badge">✅ Declaração Formal de "Área Segura"</span>
+              <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Condição Obrigatória para Reentrada</h4>
+              <p style="font-size:0.88rem; color:#334155;">
+                A reentrada nas instalações da RDO-IZ só ocorre após a varredura antibombas, a <strong>declaração formal de "Área Segura" pelas autoridades competentes</strong> e a autorização da Gerência, seguida de inspeção dos consoles e cancelamento do NOTAM.
+              </p>
+            </div>
+
+            <div class="concept-card avsec-card clickable-read-card ${isCardRead('m4-p3', 'c2') ? 'card-read-done' : ''}" id="rcard-m4-p3-c2" onclick="markCardRead('m4-p3', 'c2')">
+              ${renderReadChip('m4-p3', 'c2')}
+              <span class="concept-badge">📝 RELSEC no Portal SGAVSEC (Até 24h)</span>
+              <h4 style="font-size:1.02rem; color:var(--nav-navy); margin-bottom:0.4rem;">Registro Formal Obrigatório</h4>
+              <p style="font-size:0.88rem; color:#334155;">
+                Toda ocorrência AVSEC ou exercício ESAB exige o registro no Livro de Rádio e a submissão do <strong>RELSEC (Relatório de Segurança da Aviação Civil)</strong> no portal <strong>SGAVSEC</strong> no prazo máximo de <strong>até 24 horas</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="workbench-challenge" id="rcard-m4-p3-wb">
             <div class="workbench-header">
               <span class="workbench-tag">🎯 DESAFIO RÁPIDO DE BANCADA — REASSUNÇÃO E RELSEC</span>
-              <span style="font-size:0.8rem; color:#FDE68A;">Valide o protocolo de retorno à operação normal</span>
+              ${renderReadChip('m4-p3', 'wb')}
             </div>
             <div class="workbench-scenario">
               <strong>Cenário:</strong> A equipe da RDO-IZ está reunida no <strong>Ponto de Encontro (PE)</strong> após uma evacuação por ameaça de bomba. Passaram-se 20 minutos e aparentemente não houve explosão.<br>
@@ -1057,6 +1152,7 @@ let appState = {
   currentView: 'module-1',
   activePillByModule: { 1: 0, 2: 0, 3: 0, 4: 0 },
   visitedPills: { 1: [0], 2: [0], 3: [0], 4: [0] },
+  readCardsBySection: {},
   completedModules: [],
   finalExamPassed: false,
   finalExamScore: null,
@@ -1067,6 +1163,102 @@ let appState = {
 
 let sessionTimerInterval = null;
 
+// Mapa oficial de todos os cards de visualização obrigatória em cada Seção
+const SECTION_REQUIRED_CARDS = {
+  'm1-p1': ['c1', 'c2', 'wb'],
+  'm1-p2': ['n0', 'n1', 'n2', 'n3', 'mf'],
+  'm1-p3': ['p0', 'p1', 'p2', 'p3'],
+  'm2-p1': ['l0', 'l1', 'l2'],
+  'm2-p2': ['c1', 'c2', 'mf'],
+  'm2-p3': ['c1', 'c2', 'wb'],
+  'm3-p1': ['nb0', 'nb1', 'nb2', 'nb3'],
+  'm3-p2': ['c1', 'c2', 'wb'],
+  'm3-p3': ['c1', 'c2', 'mf'],
+  'm4-p1': ['es0', 'es1', 'es2', 'es3'],
+  'm4-p2': ['c1', 'c2', 'c3'],
+  'm4-p3': ['c1', 'c2', 'wb']
+};
+
+function isCardRead(sectionId, cardKey) {
+  const list = (appState.readCardsBySection && appState.readCardsBySection[sectionId]) || [];
+  return Array.isArray(list) && list.includes(cardKey);
+}
+
+function renderReadChip(sectionId, cardKey) {
+  const done = isCardRead(sectionId, cardKey);
+  return `<span id="chip-${sectionId}-${cardKey}" class="read-status-chip ${done ? 'done' : ''}">${done ? '✓ Lido' : '👆 Clique para ler'}</span>`;
+}
+
+function getSectionReadStats(sectionId) {
+  const req = SECTION_REQUIRED_CARDS[sectionId] || [];
+  const readList = (appState.readCardsBySection && appState.readCardsBySection[sectionId]) || [];
+  const readCount = req.filter(k => readList.includes(k)).length;
+  const totalCount = req.length;
+  const remaining = Math.max(0, totalCount - readCount);
+  return {
+    readCount,
+    totalCount,
+    remaining,
+    allRead: readCount >= totalCount
+  };
+}
+
+function renderSectionReadGateBar(sectionId) {
+  const stats = getSectionReadStats(sectionId);
+  if (stats.allRead) {
+    return `
+      <div id="sectionGateBar-${sectionId}" class="section-read-gate-bar unlocked">
+        <span>✅ <strong>Leitura Concluída (${stats.readCount}/${stats.totalCount} cards visualizados):</strong> Todos os cards desta seção foram lidos! O avanço para a próxima tela está liberado.</span>
+        <span class="status-badge badge-completed">✓ Avanço Liberado</span>
+      </div>
+    `;
+  }
+  return `
+    <div id="sectionGateBar-${sectionId}" class="section-read-gate-bar locked">
+      <span>🔒 <strong>Trava de Leitura Obrigatória (${stats.readCount} de ${stats.totalCount} cards lidos):</strong> Clique em todos os cards de informações desta tela (faltam <strong>${stats.remaining}</strong>) para liberar o avanço.</span>
+      <span class="status-badge badge-locked">Faltam ${stats.remaining} card(s)</span>
+    </div>
+  `;
+}
+
+function markCardRead(sectionId, cardKey) {
+  if (!appState.readCardsBySection || typeof appState.readCardsBySection !== 'object') {
+    appState.readCardsBySection = {};
+  }
+  if (!Array.isArray(appState.readCardsBySection[sectionId])) {
+    appState.readCardsBySection[sectionId] = [];
+  }
+  if (!appState.readCardsBySection[sectionId].includes(cardKey)) {
+    appState.readCardsBySection[sectionId].push(cardKey);
+    saveState(false);
+  }
+
+  // Atualiza visualmente o card e o chip sem recarregar toda a tela (preserva feedback aberto)
+  const chipEl = document.getElementById(`chip-${sectionId}-${cardKey}`);
+  if (chipEl) {
+    chipEl.classList.add('done');
+    chipEl.textContent = '✓ Lido';
+    const parentCard = chipEl.closest('.clickable-read-card, .norm-tree-btn, .pillar-btn');
+    if (parentCard) {
+      parentCard.classList.add('card-read-done');
+      parentCard.classList.remove('card-unread-pulse');
+    }
+  }
+
+  const gateBarEl = document.getElementById(`sectionGateBar-${sectionId}`);
+  if (gateBarEl) {
+    gateBarEl.outerHTML = renderSectionReadGateBar(sectionId);
+  }
+}
+
+function resetModuleReadCards(modId) {
+  if (!appState.readCardsBySection) appState.readCardsBySection = {};
+  delete appState.readCardsBySection[`m${modId}-p1`];
+  delete appState.readCardsBySection[`m${modId}-p2`];
+  delete appState.readCardsBySection[`m${modId}-p3`];
+  appState.visitedPills[modId] = [0];
+}
+
 function createDefaultUserCourseProgress() {
   return {
     status: 'not_started', // 'not_started' | 'in_progress' | 'completed'
@@ -1075,6 +1267,7 @@ function createDefaultUserCourseProgress() {
     currentView: 'module-1',
     activePillByModule: { 1: 0, 2: 0, 3: 0, 4: 0 },
     visitedPills: { 1: [0], 2: [0], 3: [0], 4: [0] },
+    readCardsBySection: {},
     completedModules: [],
     finalExamPassed: false,
     finalExamScore: null,
@@ -1149,6 +1342,7 @@ function syncAppStateFromUserProgress(userId, courseId = 'avsec-sbiz') {
   appState.currentView = prog.currentView || 'module-1';
   appState.activePillByModule = { 1: 0, 2: 0, 3: 0, 4: 0, ...(prog.activePillByModule || {}) };
   appState.visitedPills = { 1: [0], 2: [0], 3: [0], 4: [0], ...(prog.visitedPills || {}) };
+  appState.readCardsBySection = JSON.parse(JSON.stringify(prog.readCardsBySection || {}));
   appState.completedModules = Array.isArray(prog.completedModules) ? [...prog.completedModules] : [];
   appState.finalExamPassed = !!prog.finalExamPassed;
   appState.finalExamScore = prog.finalExamScore ?? null;
@@ -1163,6 +1357,7 @@ function syncUserProgressFromAppState() {
   prog.currentView = appState.currentView;
   prog.activePillByModule = { ...appState.activePillByModule };
   prog.visitedPills = { ...appState.visitedPills };
+  prog.readCardsBySection = JSON.parse(JSON.stringify(appState.readCardsBySection || {}));
   prog.completedModules = [...appState.completedModules];
   prog.finalExamPassed = appState.finalExamPassed;
   prog.finalExamScore = appState.finalExamScore;
@@ -2995,6 +3190,47 @@ function scrollToModuleTop() {
 }
 
 function selectModulePill(modId, pillIdx) {
+  const mod = COURSE_MODULES.find(m => m.id === modId) || COURSE_MODULES[0];
+  const currentActiveIdx = appState.activePillByModule[modId] ?? 0;
+
+  // Se o operador tentar avançar para uma próxima seção ou para o Quiz (pillIdx > currentActiveIdx),
+  // verifica se TODAS as seções anteriores até (pillIdx - 1) tiveram 100% dos seus cards clicados/lidos!
+  if (pillIdx > currentActiveIdx && mod && Array.isArray(mod.pills)) {
+    for (let s = 0; s < Math.min(pillIdx, 3); s++) {
+      const secObj = mod.pills[s];
+      if (!secObj) continue;
+      const stats = getSectionReadStats(secObj.id);
+      if (!stats.allRead) {
+        // Se o usuário clicou direto num botão lá na frente (ex: Seção 3 ou Quiz) sem terminar uma seção anterior,
+        // posiciona na seção pendente para ele ver exatamente quais cards faltam.
+        if (currentActiveIdx !== s) {
+          appState.activePillByModule[modId] = s;
+          saveState(false);
+          renderFocusModeStage();
+        }
+
+        // Destaca com pulsação vermelha todos os cards ainda não lidos na tela atual
+        document.querySelectorAll('.clickable-read-card:not(.card-read-done), .norm-tree-btn:not(.card-read-done), .pillar-btn:not(.card-read-done)').forEach(el => {
+          el.classList.remove('card-unread-pulse');
+          void el.offsetWidth; // Reflow para reiniciar animação
+          el.classList.add('card-unread-pulse');
+        });
+
+        showModal({
+          type: 'error',
+          title: `🔒 Avanço Bloqueado: Leitura Obrigatória (${stats.readCount}/${stats.totalCount} cards)`,
+          message: `
+            <p>⚠️ <strong>Regra de Progressão do Treinamento:</strong> Você não pode avançar para a próxima tela sem clicar e ler <strong>todos os cards de visualização de informações</strong> disponíveis na <strong>Seção ${s + 1}</strong>.</p>
+            <p>No momento, você visualizou <strong>${stats.readCount} de ${stats.totalCount} cards</strong> (ainda falta(m) <strong>${stats.remaining} card(s)</strong> marcado(s) com <em>"👆 Clique para ler"</em>).</p>
+            <p style="font-size:0.86rem; color:#475569;">💡 <em>Dica: Clique em cada card informativo, botão de camada/etapa e resolva o desafio prático da tela até que todos fiquem com o selo verde <strong>"✓ Lido"</strong>.</em></p>
+          `,
+          buttonText: `Voltar e Ler os ${stats.remaining} Card(s) Restante(s)`
+        });
+        return;
+      }
+    }
+  }
+
   appState.activePillByModule[modId] = pillIdx;
   if (!appState.visitedPills[modId]) appState.visitedPills[modId] = [];
   if (!appState.visitedPills[modId].includes(pillIdx)) {
@@ -3039,7 +3275,10 @@ function renderModuleFocusView(topbarEl, container, mod) {
     { label: '🧠 Quiz (3/3)', idx: 3 }
   ].map(item => {
     const isCurrent = activeIdx === item.idx;
-    const isDone = (item.idx < 3 && visited.includes(item.idx) && !isCurrent) || (item.idx === 3 && isCompleted && !isCurrent);
+    const secCompleted = item.idx < 3 && mod.pills[item.idx]
+      ? getSectionReadStats(mod.pills[item.idx].id).allRead
+      : false;
+    const isDone = (item.idx < 3 && secCompleted && !isCurrent) || (item.idx === 3 && isCompleted && !isCurrent);
     return `
       <button
         type="button"
@@ -3092,6 +3331,8 @@ function renderModuleFocusView(topbarEl, container, mod) {
       </div>
 
       ${currentPill.renderHtml()}
+
+      ${renderSectionReadGateBar(currentPill.id)}
 
       <div class="pill-footer-nav">
         ${prevBtn}
@@ -3215,6 +3456,7 @@ function answerWorkbench(modKey, choiceLetter, isCorrect) {
 
   if (modKey === 'm1') {
     if (isCorrect) {
+      markCardRead('m1-p1', 'wb');
       fb.innerHTML = `
         <strong>✅ Resposta Exata: Situação B!</strong><br>
         A invasão patrimonial e a ameaça física a um ponto sensível do tráfego aéreo constituem <strong>ato ilícito intencional</strong>, exigindo pronta resposta AVSEC conforme a <strong>ICA 205-48</strong>
@@ -3229,6 +3471,7 @@ function answerWorkbench(modKey, choiceLetter, isCorrect) {
     }
   } else if (modKey === 'm2') {
     if (isCorrect) {
+      markCardRead('m2-p3', 'wb');
       fb.innerHTML = `
         <strong>✅ Decisão Operacional Correta (Situação B)!</strong><br>
         Na 3ª Camada (ARS), nenhuma pessoa pode circular sem crachá visível ou desacompanhada. O colaborador aplica imediatamente o <strong>Procedimento de Desafio (abordagem cortês)</strong> e aciona a Gerência / Agente AVSEC conforme a <strong>ICA 63-14</strong>.
@@ -3240,6 +3483,7 @@ function answerWorkbench(modKey, choiceLetter, isCorrect) {
     }
   } else if (modKey === 'm3') {
     if (isCorrect) {
+      markCardRead('m3-p2', 'wb');
       fb.innerHTML = `
         <strong>✅ Conduta Correta (Situação B)!</strong><br>
         Conforme o <strong>Item 8.2 da ICA 205-48</strong>, é proibido conectar dispositivos USB particulares ou mídias não homologadas nos consoles operacionais e servidores do SISCEAB, protegendo os Sistemas Críticos de Missão contra ataques cibernéticos.
@@ -3251,6 +3495,7 @@ function answerWorkbench(modKey, choiceLetter, isCorrect) {
     }
   } else if (modKey === 'm4') {
     if (isCorrect) {
+      markCardRead('m4-p3', 'wb');
       fb.innerHTML = `
         <strong>✅ Protocolo Perfeito (Situação B)!</strong><br>
         A reentrada para reassunção operacional só ocorre após a <strong>declaração formal de "Área Segura" pelas autoridades competentes e autorização da Gerência</strong>, seguida de cancelamento do NOTAM e submissão do <strong>RELSEC no portal SGAVSEC em até 24 horas</strong>.
@@ -3264,6 +3509,7 @@ function answerWorkbench(modKey, choiceLetter, isCorrect) {
 }
 
 function selectNormNode(idx) {
+  markCardRead('m1-p2', `n${idx}`);
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`tree-btn-${i}`);
     if (btn) btn.classList.toggle('active', i === idx);
@@ -3286,6 +3532,7 @@ function revealMythFact(modKey, clickedMyth) {
   box.classList.add('show');
 
   if (modKey === 'm1') {
+    markCardRead('m1-p2', 'mf');
     box.innerHTML = `
       <strong style="color:${clickedMyth ? '#047857' : '#B91C1C'};">
         ${clickedMyth ? '🎯 Você acertou! Essa afirmação é um MITO!' : '⚠️ Atenção: Essa afirmação é um MITO!'}
@@ -3295,6 +3542,7 @@ function revealMythFact(modKey, clickedMyth) {
       <span class="ref-citation">DCA-205-7, p. 12</span> <span class="ref-citation">ICA-205-48, p. 17, 22</span>. A identificação de vulnerabilidades e o reporte preventivo cabem a todo o efetivo.
     `;
   } else if (modKey === 'm2') {
+    markCardRead('m2-p2', 'mf');
     box.innerHTML = `
       <strong style="color:${clickedMyth ? '#047857' : '#B91C1C'};">
         ${clickedMyth ? '🎯 Você acertou! Isso é um MITO!' : '⚠️ Atenção: Isso é um MITO!'}
@@ -3302,6 +3550,7 @@ function revealMythFact(modKey, clickedMyth) {
       <strong>✅ FATO (ICA 63-14):</strong> Nenhum prestador terceirizado ou visitante pode permanecer na 3ª Camada (ARS — Sala Técnica / Sala AFIS) sem credencial visível e sem o acompanhamento presencial (escolta) de um empregado credenciado da NAV Brasil.
     `;
   } else if (modKey === 'm3') {
+    markCardRead('m3-p3', 'mf');
     box.innerHTML = `
       <strong style="color:${clickedMyth ? '#047857' : '#B91C1C'};">
         ${clickedMyth ? '🎯 Você acertou! Isso é um MITO!' : '⚠️ Atenção: Isso é um MITO!'}
@@ -3312,6 +3561,7 @@ function revealMythFact(modKey, clickedMyth) {
 }
 
 function selectSemsPillar(idx) {
+  markCardRead('m1-p3', `p${idx}`);
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`pillar-btn-${i}`);
     if (btn) {
@@ -3332,6 +3582,7 @@ function selectSemsPillar(idx) {
 }
 
 function selectDefenseLayer(idx) {
+  markCardRead('m2-p1', `l${idx}`);
   for (let i = 0; i < 3; i++) {
     const btn = document.getElementById(`layer-btn-${i}`);
     if (btn) {
@@ -3350,6 +3601,7 @@ function selectDefenseLayer(idx) {
 }
 
 function selectNbqrStep(idx) {
+  markCardRead('m3-p1', `nb${idx}`);
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`nbqr-btn-${i}`);
     if (btn) {
@@ -3368,6 +3620,7 @@ function selectNbqrStep(idx) {
 }
 
 function selectEsabStep(idx) {
+  markCardRead('m4-p1', `es${idx}`);
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`esab-btn-${i}`);
     if (btn) {
@@ -3459,7 +3712,8 @@ function submitModuleQuiz(event, modId) {
       }
     });
   } else {
-    // ERROU QUALQUER QUESTÃO: ZERA O QUIZ E REDIRECIONA PARA O TOPO DO MÓDULO (SEÇÃO 1)
+    // ERROU QUALQUER QUESTÃO: ZERA O QUIZ E OS CARDS LIDOS DESTE MÓDULO E REDIRECIONA PARA A SEÇÃO 1
+    resetModuleReadCards(modId);
     appState.activePillByModule[modId] = 0; // Redireciona automaticamente para a Seção 1 (início do módulo)
     saveState(true);
     renderAll();
@@ -3470,7 +3724,7 @@ function submitModuleQuiz(event, modId) {
       title: `Trava 3/3 Acionada: Você acertou ${correctCount} de 3 questões`,
       message: `
         <p>⚠️ <strong>Regra de Eliminação do Treinamento:</strong> Para avançar ao próximo módulo, é obrigatório acertar <strong>todas as 3 questões (100% de aproveitamento)</strong>.</p>
-        <p>Suas respostas do quiz foram <strong>zeradas</strong> e você foi <strong>redirecionado automaticamente para o início do ${mod.code} (📌 Seção 1)</strong> para releitura das seções antes de tentar novamente.</p>
+        <p>Suas respostas do quiz e a marcação de leitura deste módulo foram <strong>reiniciadas</strong> e você foi <strong>redirecionado automaticamente para o início do ${mod.code} (📌 Seção 1)</strong> para clicar e reler todos os cards das seções antes de tentar novamente.</p>
       `,
       buttonText: `Reler ${mod.code} desde a Seção 1`,
       onConfirm: () => {
