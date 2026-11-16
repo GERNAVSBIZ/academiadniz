@@ -1550,15 +1550,6 @@ function handleLoginSubmit(event) {
   loginWithUser(matched);
 }
 
-function quickFillLogin(username, password) {
-  const uInput = document.getElementById('loginUsername');
-  const pInput = document.getElementById('loginPassword');
-  if (uInput) uInput.value = username;
-  if (pInput) pInput.value = password;
-  const matched = portalDB.users.find(u => u.username === username && u.password === password);
-  if (matched) loginWithUser(matched);
-}
-
 function loginWithUser(user) {
   appState.currentUserId = user.id;
   appState.activeCourseId = 'avsec-sbiz';
@@ -1602,6 +1593,12 @@ function handleLogout() {
   appState.portalMode = 'login';
   appState.inFocusMode = false;
   sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+  const errBox = document.getElementById('loginErrorBox');
+  if (uInput) uInput.value = '';
+  if (pInput) pInput.value = '';
+  if (errBox) errBox.style.display = 'none';
   renderAll();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1773,7 +1770,6 @@ function renderAll() {
     if (portalEl) portalEl.style.display = 'none';
     if (lobbyEl) lobbyEl.style.display = 'none';
     if (focusEl) focusEl.style.display = 'none';
-    renderLoginQuickProfiles();
     return;
   }
 
@@ -1801,21 +1797,6 @@ function renderAll() {
     renderEmployeeBar();
     renderLobbyGrid();
   }
-}
-
-function renderLoginQuickProfiles() {
-  const listEl = document.getElementById('loginQuickProfilesList');
-  if (!listEl) return;
-  const activeUsers = portalDB.users.filter(u => u.active !== false);
-  listEl.innerHTML = activeUsers.map(u => {
-    const roleTag = u.role === 'gestor' ? '👑 GESTOR / ADMIN' : '👨‍✈️ COLABORADOR';
-    return `
-      <button type="button" class="quick-profile-btn" onclick="quickFillLogin('${escapeHtml(u.username)}', '${escapeHtml(u.password)}')">
-        <strong>${roleTag}: ${escapeHtml(u.name)}</strong>
-        <span>Login: <code>${escapeHtml(u.username)}</code> | Matrícula: ${escapeHtml(u.matricula)}</span>
-      </button>
-    `;
-  }).join('');
 }
 
 // ============================================================================

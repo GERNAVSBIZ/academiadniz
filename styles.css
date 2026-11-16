@@ -1248,67 +1248,6 @@ body {
   font-weight: 600;
 }
 
-.login-QuickAccess-box {
-  margin-top: 1.6rem;
-  padding-top: 1.2rem;
-  border-top: 1.5px dashed #CBD5E1;
-}
-
-.quick-access-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--nav-muted);
-  margin-bottom: 0.75rem;
-}
-
-.cloud-badge {
-  background: #EFF6FF;
-  color: var(--nav-blue);
-  border: 1px solid #BFDBFE;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-
-.quick-profiles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 0.55rem;
-}
-
-.quick-profile-btn {
-  text-align: left;
-  background: #F8FAFC;
-  border: 1.5px solid #E2E8F0;
-  border-radius: 9px;
-  padding: 0.6rem 0.8rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: inherit;
-}
-
-.quick-profile-btn:hover {
-  border-color: var(--nav-blue);
-  background: #EFF6FF;
-}
-
-.quick-profile-btn strong {
-  display: block;
-  font-size: 0.82rem;
-  color: var(--nav-navy);
-}
-
-.quick-profile-btn span {
-  font-size: 0.73rem;
-  color: var(--nav-muted);
-}
-
 /* CRONÔMETRO DE SESSÃO NO TOPO */
 .session-timer-pill {
   display: flex;
