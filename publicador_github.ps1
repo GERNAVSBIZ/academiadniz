@@ -161,8 +161,8 @@ $btnPush.Add_Click({
             git remote set-url origin $RepoUrl
         }
 
-        Write-Log "Adicionando arquivos (index.html, styles.css, app.js)..."
-        git add index.html styles.css app.js ENVIAR_PARA_GITHUB.bat publicador_github.ps1 2>&1 | Out-String | ForEach-Object {
+        Write-Log "Adicionando arquivos (index.html, styles.css, app.js, favicons)..."
+        git add index.html styles.css app.js favicon.ico favicon.png favicon.svg ENVIAR_PARA_GITHUB.bat publicador_github.ps1 2>&1 | Out-String | ForEach-Object {
             if ($_.Trim()) { Write-Log $_.Trim() }
         }
 

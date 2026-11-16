@@ -13,7 +13,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -STA -File "%~dp0publicador_github
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Alternativa via terminal direto:
-    git add index.html styles.css app.js
+    git add index.html styles.css app.js favicon.ico favicon.png favicon.svg
     git commit -m "Atualizacao Treinamento AVSEC SBIZ"
     git branch -M main
     git push -u origin main
